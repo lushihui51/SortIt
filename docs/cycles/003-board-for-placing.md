@@ -106,7 +106,7 @@ None.
 
 **Out of scope**
 
-- Marks, Check and Retry, and the removal of a mark on `select` and `dragStart`: a later cycle.
+- Marks, Check and Retry, and the removal of a mark on `select` and `dragStart`: cycle 004.
 - A React hook or component: T2.
 - Drawing a random number inside the reducer, or a seed in the state: never; ADR 003 feeds the reducer by its actions.
 - Storing the set, or anything else, in `BoardState`: never; ADR 003 names the state.
@@ -232,7 +232,7 @@ The page shows the picker, the pool, the prompt and, once a dimension is chosen,
 
 - Dragging, and any import from @dnd-kit/core: T3.
 - Any stylesheet rule beyond `.visually-hidden`: T4.
-- Check, the hint while it is disabled, marks, the score and Retry: a later cycle.
+- Check, the hint while it is disabled, marks, the score and Retry: cycle 004.
 - Running the validator when the app starts and the error shown in place of the board: a later cycle, held by an open question.
 - A heading or any text beyond the words listed above: never; the vocabulary gives the words.
 - A confirmation before Reset or a change of dimension: never; PDR 004 decided against one.
@@ -346,7 +346,7 @@ The board fits a desktop screen without scrolling at the sizes PDR 001 promises 
 
 **Out of scope**
 
-- Colours or icons for marks, and the layout of Check, the hint, the score and Retry: a later cycle.
+- Colours or icons for marks, and the layout of Check, the hint, the score and Retry: cycle 004.
 - Dark mode: an unsettled decision.
 - A font loaded from the network: never; the stylesheet survives without it and nothing is kept beyond the visit.
 - Animation of a card settling after a drop: an unsettled decision.
