@@ -49,17 +49,18 @@ None.
   ```
 
   `answers` maps a dimension's name to one category name of that dimension. Nothing in the set has an id.
+
 - src/set/findFirstFault.ts must export exactly this type and this function:
 
   ```ts
   export type SetFault =
-    | { kind: 'noItem' }
-    | { kind: 'noDimension' }
-    | { kind: 'tooFewCategories'; dimension: string }
-    | { kind: 'duplicateItem'; item: string }
-    | { kind: 'duplicateDimension'; dimension: string }
-    | { kind: 'duplicateCategory'; dimension: string; category: string }
-    | { kind: 'answer'; item: string; dimension: string };
+    | { kind: "noItem" }
+    | { kind: "noDimension" }
+    | { kind: "tooFewCategories"; dimension: string }
+    | { kind: "duplicateItem"; item: string }
+    | { kind: "duplicateDimension"; dimension: string }
+    | { kind: "duplicateCategory"; dimension: string; category: string }
+    | { kind: "answer"; item: string; dimension: string };
 
   export function findFirstFault(set: ItemSet): SetFault | null;
   ```
@@ -75,7 +76,7 @@ None.
 - A key in `answers` that names no dimension is never a fault (ADR 004: these rules and no other).
 - `findFirstFault` must not change the set it is given.
 - src/set/findFirstFault.test.ts must hold one test per fault kind, each on a set that has that fault and no other, asserting the exact `SetFault` object with `toEqual`; one test on a set with no fault asserting `null`; and one test on a set with both a repeated item name and a bad answer asserting the `duplicateItem` fault, which proves the order. Test names must say the rule they prove, in the words of PDR 005.
-- In docs/vocabulary.md, the Code cell of the Dimension row must read `` `Dimension` in src/set/itemSet.ts ``, the Code cell of the Card row must read `` `Item` in src/set/itemSet.ts ``, and the Code cell of the Zone row must read `` one of `Dimension.categories` in src/set/itemSet.ts ``. Where cells stay as they are.
+- In docs/vocabulary.md, the Code cell of the Dimension row must read `` `Dimension` in src/set/itemSet.ts ``, the Code cell of the Card row must read `` `Item` in src/set/itemSet.ts ``, and the Code cell of the Zone row must read ``one of `Dimension.categories` in src/set/itemSet.ts``. Where cells stay as they are.
 
 **Out of scope**
 
@@ -101,7 +102,7 @@ None.
 
 **Status**
 
-- [ ]
+- [x]
 
 **Goal**
 
@@ -126,13 +127,14 @@ The repository ships one set of 30 animals in the dimensions Habitat and Diet, t
 - src/set/shippedSet.ts must import the JSON file and export it as the typed set, and nothing else (ADR 004):
 
   ```ts
-  import set from './set.json';
-  import type { ItemSet } from './itemSet';
+  import set from "./set.json";
+  import type { ItemSet } from "./itemSet";
 
   export const shippedSet: ItemSet = set;
   ```
 
   Guidance: if the import fails to typecheck, add `"resolveJsonModule": true` to the compiler options of tsconfig.app.json.
+
 - src/set/shippedSet.test.ts must hold one test asserting that `findFirstFault(shippedSet)` is `null` (ADR 004), and no test on the set's size.
 
 **Out of scope**
@@ -151,4 +153,11 @@ The repository ships one set of 30 animals in the dimensions Habitat and Diet, t
 
 **Debrief**
 
-None.
+- `npm run typecheck` exited 0.
+- `npm test -- --reporter=default` printed `✓ src/set/shippedSet.test.ts (1 test)` beside the 9 tests of src/set/findFirstFault.test.ts and the 1 of src/recordCitationGuard.test.ts, then `Tests  11 passed (11)`.
+- The `node -e` command printed `30 Habitat:6 Diet:3`.
+- With `"Habitat": "Grassland"` deleted from Lion's answers, `npm test` failed with `AssertionError: expected { kind: 'answer', item: 'Lion', …(1) } to be null`, and its diff showed `"dimension": "Habitat"`, `"item": "Lion"` and `"kind": "answer"`. After the file was restored, `npm test` passed 11 of 11.
+- `npm run build` exited 0.
+- Departure: tsconfig.app.json is unchanged. The import typechecks without `resolveJsonModule`, because the `bundler` module resolution already resolves JSON imports. src/set/shippedSet.ts uses double quotes, as the rest of src/ does, where the Details snippet shows single quotes.
+- The set spreads its 30 items five to each Habitat category. Diet holds 11 herbivores, 14 carnivores and 5 omnivores. No Ocean animal is a herbivore or an omnivore, because no ocean animal of either diet is one a general reader places without hesitation.
+- To read: src/set/set.json, which the product owner checks item by item. Fennec Fox and Duck (Omnivore) and Seahorse (Carnivore) are the answers most open to doubt. Each item's answers sit on one line so the file is easy to edit by hand.

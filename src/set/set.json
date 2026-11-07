@@ -1,0 +1,145 @@
+{
+  "dimensions": [
+    {
+      "name": "Habitat",
+      "categories": [
+        "Ocean",
+        "Forest",
+        "Desert",
+        "Grassland",
+        "Arctic",
+        "Freshwater"
+      ]
+    },
+    {
+      "name": "Diet",
+      "categories": [
+        "Herbivore",
+        "Carnivore",
+        "Omnivore"
+      ]
+    }
+  ],
+  "items": [
+    {
+      "name": "Shark",
+      "answers": { "Habitat": "Ocean", "Diet": "Carnivore" }
+    },
+    {
+      "name": "Dolphin",
+      "answers": { "Habitat": "Ocean", "Diet": "Carnivore" }
+    },
+    {
+      "name": "Octopus",
+      "answers": { "Habitat": "Ocean", "Diet": "Carnivore" }
+    },
+    {
+      "name": "Orca",
+      "answers": { "Habitat": "Ocean", "Diet": "Carnivore" }
+    },
+    {
+      "name": "Seahorse",
+      "answers": { "Habitat": "Ocean", "Diet": "Carnivore" }
+    },
+    {
+      "name": "Deer",
+      "answers": { "Habitat": "Forest", "Diet": "Herbivore" }
+    },
+    {
+      "name": "Gorilla",
+      "answers": { "Habitat": "Forest", "Diet": "Herbivore" }
+    },
+    {
+      "name": "Owl",
+      "answers": { "Habitat": "Forest", "Diet": "Carnivore" }
+    },
+    {
+      "name": "Brown Bear",
+      "answers": { "Habitat": "Forest", "Diet": "Omnivore" }
+    },
+    {
+      "name": "Wild Boar",
+      "answers": { "Habitat": "Forest", "Diet": "Omnivore" }
+    },
+    {
+      "name": "Camel",
+      "answers": { "Habitat": "Desert", "Diet": "Herbivore" }
+    },
+    {
+      "name": "Desert Tortoise",
+      "answers": { "Habitat": "Desert", "Diet": "Herbivore" }
+    },
+    {
+      "name": "Scorpion",
+      "answers": { "Habitat": "Desert", "Diet": "Carnivore" }
+    },
+    {
+      "name": "Rattlesnake",
+      "answers": { "Habitat": "Desert", "Diet": "Carnivore" }
+    },
+    {
+      "name": "Fennec Fox",
+      "answers": { "Habitat": "Desert", "Diet": "Omnivore" }
+    },
+    {
+      "name": "Zebra",
+      "answers": { "Habitat": "Grassland", "Diet": "Herbivore" }
+    },
+    {
+      "name": "Giraffe",
+      "answers": { "Habitat": "Grassland", "Diet": "Herbivore" }
+    },
+    {
+      "name": "Lion",
+      "answers": { "Habitat": "Grassland", "Diet": "Carnivore" }
+    },
+    {
+      "name": "Cheetah",
+      "answers": { "Habitat": "Grassland", "Diet": "Carnivore" }
+    },
+    {
+      "name": "Baboon",
+      "answers": { "Habitat": "Grassland", "Diet": "Omnivore" }
+    },
+    {
+      "name": "Polar Bear",
+      "answers": { "Habitat": "Arctic", "Diet": "Carnivore" }
+    },
+    {
+      "name": "Snowy Owl",
+      "answers": { "Habitat": "Arctic", "Diet": "Carnivore" }
+    },
+    {
+      "name": "Reindeer",
+      "answers": { "Habitat": "Arctic", "Diet": "Herbivore" }
+    },
+    {
+      "name": "Arctic Hare",
+      "answers": { "Habitat": "Arctic", "Diet": "Herbivore" }
+    },
+    {
+      "name": "Musk Ox",
+      "answers": { "Habitat": "Arctic", "Diet": "Herbivore" }
+    },
+    {
+      "name": "Beaver",
+      "answers": { "Habitat": "Freshwater", "Diet": "Herbivore" }
+    },
+    {
+      "name": "Hippopotamus",
+      "answers": { "Habitat": "Freshwater", "Diet": "Herbivore" }
+    },
+    {
+      "name": "Crocodile",
+      "answers": { "Habitat": "Freshwater", "Diet": "Carnivore" }
+    },
+    {
+      "name": "River Otter",
+      "answers": { "Habitat": "Freshwater", "Diet": "Carnivore" }
+    },
+    {
+      "name": "Duck",
+      "answers": { "Habitat": "Freshwater", "Diet": "Omnivore" }
+    }
+  ]
+}
