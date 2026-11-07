@@ -4,7 +4,7 @@ This file gives the words for every concept the app shows, every act on it and e
 
 | Area | Concept | User reads | Where | Code |
 | --- | --- | --- | --- | --- |
-| Title | The app's name | "Sort It" | Not shown yet | — |
+| Title | The app's name | "Sort It" | The browser tab | the `<title>` of index.html |
 | Board | Dimension, the way the set is sorted, picked by the learner | "Sort by"; the dimension's name as the set gives it, as "Habitat" | Not shown yet | — |
 | Board | Prompt shown where the zones will be, before a dimension is chosen | "Choose how to sort to begin" | Not shown yet | — |
 | Board | Pool, where unplaced cards wait | "Unsorted" | Not shown yet | — |

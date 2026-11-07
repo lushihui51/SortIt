@@ -20,7 +20,7 @@ Judgement: The engineer clones the cycle's branch fresh, runs `npm ci`, `npm tes
 
 **Status**
 
-- [ ]
+- [x]
 
 **Goal**
 
@@ -107,7 +107,29 @@ None.
 
 **Debrief**
 
-None.
+Evidence, in the order of Done when:
+
+- `npm ci` exited 0, ending `found 0 vulnerabilities`.
+- `npm run typecheck` exited 0 and printed only `> sort-it@0.0.0 typecheck` and `> tsc -b`.
+- `npm test` summary: `Test Files  1 passed (1)` and `Tests  1 passed (1)`.
+- After `git add -A` with `// ADR 099` appended to src/App.tsx, `npm test` failed with `+ src/App.tsx: ADR 099 names no record`, and `Test Files  1 failed (1)`.
+- With `// ADR 001` appended and that record's Status line set to `Deprecated by a trial`, `npm test` failed with `+ src/App.tsx: ADR 001 is Deprecated by a trial`; after reverting both, `git diff` was empty and `npm test` read `Tests  1 passed (1)`.
+- `npm run build` exited 0; the grep printed one line, `src="/SortIt/assets/index-C5iTodhL.js"`.
+- `npm run dev` printed `http://localhost:5199/SortIt/` (run with `--port 5199 --strictPort`); the served HTML holds `<title>Sort It</title>`, and a headless Firefox screenshot of that URL is a blank white page. Headless Firefox shows no tab, so the tab title was read from the served HTML; the engineer sees the tab itself at review.
+- The removal check printed `gone`.
+- The sed printed `# Commands`, a blank line, the four lines of the Details, a blank line and `# Hard rules`.
+
+Departures from guidance:
+
+- The current `react-ts` template no longer ships src/vite-env.d.ts: its tsconfig.app.json sets `"types": ["vite/client"]` instead. I kept that and did not create src/vite-env.d.ts.
+- The template now ships oxlint, with .oxlintrc.json and a `lint` script, in place of ESLint. I left all three out, as the constraint against any other tool requires.
+- tsconfig.app.json's `types` reads `["vite/client", "node"]`, so the guard in src/ typechecks its `node:` imports and `process` under `npm run typecheck`. This also makes Node's types visible to app code in src/.
+- Versions installed: react and react-dom 19.3.1, typescript 7.0.2, vite 8.3.6, vitest 5.1.0, @vitejs/plugin-react 6.2.1.
+
+What to read:
+
+- src/recordCitationGuard.test.ts, `readStatuses`: a record file with no `## Status` line gets an empty Status, so a citation of it reports `is ` followed by nothing rather than `names no record`.
+- A formatter hook in this session rewrote src/recordCitationGuard.test.ts in double quotes with semicolons. It also padded every row of docs/vocabulary.md's table, so I restored that file and changed only the Title row.
 
 ### T2 — Check and deploy workflow
 
