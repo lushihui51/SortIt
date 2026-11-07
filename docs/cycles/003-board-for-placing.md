@@ -26,7 +26,7 @@ Judgement: The engineer runs `npm test` and sees the reducer's tests and the com
 
 **Status**
 
-- [ ]
+- [x]
 
 **Goal**
 
@@ -47,12 +47,12 @@ None.
 - src/board/board.ts must export exactly these types, this constant and these functions (ADR 003):
 
   ```ts
-  import type { ItemSet } from '../set/itemSet';
+  import type { ItemSet } from "../set/itemSet";
 
   /** Returns a number in [0, 1), as Math.random does. */
   export type RandomSource = () => number;
 
-  export type Place = { kind: 'pool' } | { kind: 'zone'; category: string };
+  export type Place = { kind: "pool" } | { kind: "zone"; category: string };
 
   export type BoardState = {
     dimension: string | null;
@@ -62,12 +62,12 @@ None.
   };
 
   export type BoardAction =
-    | { type: 'load'; random: RandomSource }
-    | { type: 'chooseDimension'; dimension: string; random: RandomSource }
-    | { type: 'select'; item: string }
-    | { type: 'dragStart'; item: string }
-    | { type: 'place'; item: string; place: Place }
-    | { type: 'reset'; random: RandomSource };
+    | { type: "load"; random: RandomSource }
+    | { type: "chooseDimension"; dimension: string; random: RandomSource }
+    | { type: "select"; item: string }
+    | { type: "dragStart"; item: string }
+    | { type: "place"; item: string; place: Place }
+    | { type: "reset"; random: RandomSource };
 
   export const emptyBoard: BoardState;
 
@@ -79,6 +79,7 @@ None.
   ```
 
   `places` is keyed by item name and holds every item of the set once the board is loaded; `order` holds every item name exactly once, and the pool and every zone show their cards in the order of `order`. `emptyBoard` has no dimension, no place, an empty order and no selection.
+
 - `shuffle` must return a new array in the Fisher-Yates order: copy the list, then for `i` from the last index down to 1 draw `j = Math.floor(random() * (i + 1))` and swap the elements at `i` and `j`. It must call `random` exactly `length - 1` times and never change the list it is given.
 - The reducer returned by `createBoardReducer` must be pure: it never calls `Math.random`, never mutates `state`, the action or the set, and returns `state` itself whenever an action changes nothing (ADR 003).
 - The actions must do exactly this:
@@ -102,7 +103,7 @@ None.
   - `place` into a zone of a category the dimension lacks returns the same state object.
   - `place` back into the pool moves the card.
   - `reset` returns every card to the pool, reshuffles the order, clears the selection and keeps the dimension.
-- In docs/vocabulary.md, the Code cells must be extended so that: the Dimension row's reads `` `Dimension` in src/set/itemSet.ts; `dimension` of `BoardState` in src/board/board.ts ``; the Pool row's reads `` `Place` of kind `pool` in src/board/board.ts ``; the Zone row's reads `` one of `Dimension.categories` in src/set/itemSet.ts; `Place` of kind `zone` in src/board/board.ts ``; the Selected card row's reads `` `selected` of `BoardState` in src/board/board.ts ``; the Reset row's reads `` the `reset` action of `BoardAction` in src/board/board.ts ``. Where cells stay as they are.
+- In docs/vocabulary.md, the Code cells must be extended so that: the Dimension row's reads `` `Dimension` in src/set/itemSet.ts; `dimension` of `BoardState` in src/board/board.ts ``; the Pool row's reads `` `Place` of kind `pool` in src/board/board.ts ``; the Zone row's reads ``one of `Dimension.categories` in src/set/itemSet.ts; `Place` of kind `zone` in src/board/board.ts``; the Selected card row's reads `` `selected` of `BoardState` in src/board/board.ts ``; the Reset row's reads ``the `reset` action of `BoardAction` in src/board/board.ts``. Where cells stay as they are.
 
 **Out of scope**
 
@@ -118,7 +119,10 @@ None.
 
 **Debrief**
 
-None.
+- `npm run typecheck` printed `> tsc -b` and exited 0.
+- `npm test` printed `Test Files  4 passed (4)` and `Tests  31 passed (31)`; `npx vitest run --reporter=verbose` lists 20 passing tests in src/board/board.test.ts, the 13 the Details name (the `select` case split into three tests) and seven more: `select` and `place` of an item the board lacks, `dragStart` with no selection, `place` where the card already lies, and one test that no action changes the state, the action or the set. src/recordCitationGuard.test.ts still passes, and `npm run build` succeeds.
+- No departure from guidance. The tests use a set of four items of their own rather than `shippedSet`, so every expected state is written out in full; a random source of zeros makes every shuffle of four cards a rotation left by one, which tells a shuffle of the current `order` from one of the set's order.
+- Read `createBoardReducer` in src/board/board.ts: every action's result passes through `sameBoard`, so any action whose result equals the state returns `state` itself, as the purity constraint requires. This covers cases the action list does not name, such as `place` into the place a card already holds with no selection, or a `reset` whose shuffle happens to give the same order. `select` and `place` test an item with `Object.hasOwn`, so a name such as `toString` is not taken as being on the board.
 
 ### T2 — Board components with select and send
 
@@ -159,7 +163,10 @@ The page shows the picker, the pool, the prompt and, once a dimension is chosen,
   ```tsx
   // src/board/Board.tsx
   export type BoardProps = { set: ItemSet; random?: RandomSource };
-  export default function Board({ set, random = Math.random }: BoardProps): ReactElement;
+  export default function Board({
+    set,
+    random = Math.random,
+  }: BoardProps): ReactElement;
 
   // src/board/DimensionPicker.tsx
   export type DimensionPickerProps = {
@@ -218,10 +225,10 @@ The page shows the picker, the pool, the prompt and, once a dimension is chosen,
   - `Reset returns every card to the pool and keeps the dimension`
   - `choosing another dimension clears the board and shows its zones`
   - `choosing the current dimension again changes nothing`
-  Guidance: the fixed random source makes the order after every shuffle exact, so a test can assert the first card's name; `screen.getByRole('button', { name: 'Penguin Selected' })` finds a selected card by its full accessible name, where Penguin stands for whatever item the test picked.
+    Guidance: the fixed random source makes the order after every shuffle exact, so a test can assert the first card's name; `screen.getByRole('button', { name: 'Penguin Selected' })` finds a selected card by its full accessible name, where Penguin stands for whatever item the test picked.
 - In docs/vocabulary.md the rows must change so that:
   - Dimension: Where reads `The picker, as one button per dimension under "Sort by"`; Code gains `; `DimensionPicker` in src/board/DimensionPicker.tsx`.
-  - Prompt: Where reads `Where the zones will be, before a dimension is chosen`; Code reads `` the prompt in `Board` in src/board/Board.tsx ``.
+  - Prompt: Where reads `Where the zones will be, before a dimension is chosen`; Code reads ``the prompt in `Board` in src/board/Board.tsx``.
   - Pool: Where reads `The pool's label`; Code gains `; `Pool` in src/board/Pool.tsx`.
   - Card: Where reads `Each card`; Code gains `; `Card` in src/board/Card.tsx`.
   - Zone: Where reads `Each zone's label`; Code gains `; `Zone` in src/board/Zone.tsx`.
