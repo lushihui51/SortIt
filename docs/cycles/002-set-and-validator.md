@@ -21,7 +21,7 @@ Judgement: The engineer runs `npm test` and sees the validator's tests and the s
 
 **Status**
 
-- [ ]
+- [x]
 
 **Goal**
 
@@ -91,7 +91,11 @@ None.
 
 **Debrief**
 
-None.
+- `npm run typecheck` exited 0.
+- `npm test -- --reporter=default` printed `✓ src/set/findFirstFault.test.ts (9 tests)` beside `✓ src/recordCitationGuard.test.ts (1 test)`, then `Tests  10 passed (10)`. A bare `npm test` run inside this agent session printed only the totals, because Vitest picks a quieter reporter when it detects an agent; from a plain terminal it lists the files.
+- `npm run build` exited 0.
+- Departure: none from the Details. The no-fault test also gives the set an answers key naming no dimension and asserts that the set is unchanged after the call, and the answer test asserts both the missing entry and the value outside the categories. This proves the two other constraints without adding a test, so the count stays at 9.
+- To read: src/set/findFirstFault.ts, `findFirstFault`, the answer loop. It treats an answer as present only when `Object.hasOwn` finds it, so an inherited key such as `toString` never counts as an answer.
 
 ### T2 — The first set
 
