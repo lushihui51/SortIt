@@ -128,7 +128,7 @@ None.
 
 **Status**
 
-- [ ]
+- [x]
 
 **Goal**
 
@@ -252,7 +252,12 @@ The page shows the picker, the pool, the prompt and, once a dimension is chosen,
 
 **Debrief**
 
-None.
+- `npm run typecheck` printed `> tsc -b` and exited 0.
+- `npm test` printed `Test Files  5 passed (5)` and `Tests  43 passed (43)`; `npx vitest run --reporter=verbose` lists the 12 tests of src/board/Board.test.tsx under the names the Details give, all passing, and `every record citation outside the records names an active record` in src/recordCitationGuard.test.ts passing. `npm run build` succeeds.
+- `npm run dev`, driven by a Playwright script in headless Chromium from outside the repository: the page read `Sort by`, `Habitat`, `Diet`, `Reset`, `Unsorted` with 30 cards and `Choose how to sort to begin`; a click on `Habitat` gave 6 zones; a click on `Baboon` and then on `Ocean` left `Ocean` holding `Baboon`; after a reload the pool held 30 cards in another order with `Habitat` at `aria-pressed="false"`. The only console error was the browser's own 404 for /favicon.ico, which index.html does not declare.
+- No departure from guidance: the reducer is memoised on `set`, and the tests find a selected card by its full name, such as `Baboon Selected`.
+- Read `Card` in src/board/Card.tsx: a selected card's button holds a space between the item's name and the `Selected` span, because without it the spoken name runs together as `BaboonSelected`. That space is the only thing in the button besides the name and the span.
+- Read `Board` in src/board/Board.tsx: Escape is caught by a `keydown` handler on the board's outer `div`, so it works from any focused button in the board. `Board` reads `set` only at its first render: a new `set` gives a new reducer but does not load the board again. The keyboard test sets focus with `focus()` rather than Tab, and presses Enter on the card and Space on the zone's label; the Tab path is left to the hand check of the cycle's Judgement.
 
 ### T3 — Dragging with dnd-kit
 

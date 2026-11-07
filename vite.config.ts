@@ -4,4 +4,8 @@ import { defineConfig } from 'vitest/config'
 export default defineConfig({
   base: '/SortIt/',
   plugins: [react()],
+  test: {
+    environment: 'jsdom',
+    setupFiles: ['src/test/setup.ts'],
+  },
 })
