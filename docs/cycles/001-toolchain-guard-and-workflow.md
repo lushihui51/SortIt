@@ -135,7 +135,7 @@ What to read:
 
 **Status**
 
-- [ ]
+- [x]
 
 **Goal**
 
@@ -175,4 +175,19 @@ Every pull request and every push to main runs a check job of install, typecheck
 
 **Debrief**
 
-None.
+Evidence, in the order of Done when:
+
+- The js-yaml command printed `parsed`.
+- The grep printed six lines, in order: `20:      - run: npm ci`, `21:      - run: npm run typecheck`, `22:      - run: npm test`, `23:      - run: npm run build`, `25:        uses: actions/upload-pages-artifact@v5`, `45:        uses: actions/deploy-pages@v5`.
+- `grep -c "needs: check"` printed `1`.
+- `grep -c "github.event_name == 'push'"` printed `2`.
+- The check job on the cycle's pull request is left to the engineer. Locally, with the workflow staged, `npm test` read `Tests  1 passed (1)`, and `npm run typecheck` and `npm run build` exited 0.
+
+Departures from guidance:
+
+- Action majors, read from each action's latest release: actions/checkout v7, actions/setup-node v7, actions/upload-pages-artifact v5, actions/deploy-pages v5.
+- The `pages` concurrency group sits on the deploy job, not the workflow. At workflow level it would also queue every pull request's check behind the others, and GitHub cancels a pending run when a newer one queues in the same group, so a pull request's check could be dropped.
+
+What to read:
+
+- .github/workflows/check-and-deploy.yml, the deploy job: its job-level `permissions` replace the workflow's `contents: read`, so the deploy job holds only `pages: write` and `id-token: write`, which is all deploy-pages needs.
