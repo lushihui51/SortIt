@@ -12,6 +12,7 @@ import type { ItemSet } from "../set/itemSet";
 import {
   createBoardReducer,
   emptyBoard,
+  score,
   type Place,
   type RandomSource,
 } from "./board";
@@ -36,8 +37,8 @@ export type BoardProps = {
 };
 
 /**
- * The board over `set`: the picker, Reset, the pool and the zones of the
- * chosen dimension. It loads with every card in the pool and no dimension
+ * The board over `set`: the picker, Reset, Check, Retry, the score, the pool
+ * and the zones of the chosen dimension. It loads with every card in the pool and no dimension
  * chosen, and reads `set` only when it first renders.
  */
 export default function Board({
@@ -49,6 +50,11 @@ export default function Board({
     reducer(board, { type: "load", random }),
   );
   const disabled = state.dimension === null;
+  const canCheck =
+    !disabled &&
+    state.order.every((item) => state.places[item].kind !== "pool");
+  const canRetry = Object.values(state.marks).includes("incorrect");
+  const verdict = score(state);
   const categories =
     set.dimensions.find((dimension) => dimension.name === state.dimension)
       ?.categories ?? [];
@@ -124,10 +130,39 @@ export default function Board({
           >
             Reset
           </button>
+          <button
+            type="button"
+            className="board-action"
+            disabled={!canCheck}
+            onClick={() => dispatch({ type: "check" })}
+          >
+            Check
+          </button>
+          {!canCheck && (
+            <span className="board-hint">Place every card to check</span>
+          )}
+          <button
+            type="button"
+            className="board-action"
+            disabled={!canRetry}
+            onClick={() => dispatch({ type: "retry", random })}
+          >
+            Retry
+          </button>
+          {/* Always present, so assistive technology reads the score as it
+              appears. */}
+          <div aria-live="polite">
+            {verdict && (
+              <p className="board-score">
+                {verdict.correct} of {verdict.total} correct
+              </p>
+            )}
+          </div>
         </div>
         <Pool
           items={itemsIn({ kind: "pool" })}
           selected={state.selected}
+          marks={state.marks}
           disabled={disabled}
           onPressCard={select}
           onPressLabel={() => send({ kind: "pool" })}
@@ -142,6 +177,7 @@ export default function Board({
                 category={category}
                 items={itemsIn({ kind: "zone", category })}
                 selected={state.selected}
+                marks={state.marks}
                 disabled={disabled}
                 onPressCard={select}
                 onPressLabel={() => send({ kind: "zone", category })}

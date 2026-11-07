@@ -1,5 +1,6 @@
 import { useDroppable } from "@dnd-kit/core";
 import { useId } from "react";
+import type { Mark } from "./board";
 import Card from "./Card";
 import "./Pool.css";
 
@@ -8,6 +9,8 @@ export type PoolProps = {
   items: readonly string[];
   /** The selected card's item name; null while no card is selected. */
   selected: string | null;
+  /** The mark of each card that bears one, keyed by item name; a card with no entry is unmarked. */
+  marks: Record<string, Mark>;
   /** Disables every card shown here. */
   disabled: boolean;
   onPressCard: (item: string) => void;
@@ -22,6 +25,7 @@ export type PoolProps = {
 export default function Pool({
   items,
   selected,
+  marks,
   disabled,
   onPressCard,
   onPressLabel,
@@ -50,6 +54,7 @@ export default function Pool({
           key={item}
           item={item}
           selected={item === selected}
+          mark={marks[item] ?? null}
           disabled={disabled}
           onPress={onPressCard}
         />

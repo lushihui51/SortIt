@@ -210,3 +210,178 @@ test("choosing the current dimension again changes nothing", async () => {
     ...afterChoose.slice(2),
   ]);
 });
+
+const answer = (item: string) =>
+  shippedSet.items.find((i) => i.name === item)!.answers[habitat.name];
+
+/** A Habitat category that is not `item`'s answer. */
+const wrongFor = (item: string) =>
+  habitat.categories.find((category) => category !== answer(item))!;
+
+/**
+ * Places every card of the pool by click, in the pool's order, into the zone
+ * `wrong` names for it, or else into the zone of its Habitat answer.
+ */
+async function placeAll(
+  user: ReturnType<typeof userEvent.setup>,
+  wrong: Record<string, string> = {},
+) {
+  for (const item of cardsIn("Unsorted")) {
+    await user.click(screen.getByRole("button", { name: item }));
+    await user.click(
+      screen.getByRole("button", { name: wrong[item] ?? answer(item) }),
+    );
+  }
+}
+
+function checkButton() {
+  return screen.getByRole("button", { name: "Check" });
+}
+
+function retryButton() {
+  return screen.getByRole("button", { name: "Retry" });
+}
+
+const hint = "Place every card to check";
+const wrongTwo = {
+  [afterChoose[0]]: wrongFor(afterChoose[0]),
+  [afterChoose[2]]: wrongFor(afterChoose[2]),
+};
+
+test("disables Check and shows the hint while the pool is not empty", async () => {
+  const user = setUp();
+  expect(checkButton()).toBeDisabled();
+  expect(checkButton().nextElementSibling).toHaveTextContent(hint);
+  await chooseHabitat(user);
+  await user.click(screen.getByRole("button", { name: afterChoose[0] }));
+  await user.click(
+    screen.getByRole("button", { name: answer(afterChoose[0]) }),
+  );
+  expect(checkButton()).toBeDisabled();
+  expect(checkButton().nextElementSibling).toHaveTextContent(hint);
+});
+
+test("enables Check and removes the hint once the pool is empty", async () => {
+  const user = setUp();
+  await chooseHabitat(user);
+  await placeAll(user);
+  expect(cardsIn("Unsorted")).toEqual([]);
+  expect(checkButton()).toBeEnabled();
+  expect(screen.queryByText(hint)).toBeNull();
+});
+
+test("Check marks every card where it lies and shows the score", async () => {
+  const user = setUp();
+  await chooseHabitat(user);
+  await placeAll(user, wrongTwo);
+  expect(screen.queryByText(/correct$/)).toBeNull();
+  await user.click(checkButton());
+  for (const item of names) {
+    const mark = item in wrongTwo ? "incorrect" : "correct";
+    const word = mark === "correct" ? "Correct" : "Incorrect";
+    const zone = wrongTwo[item] ?? answer(item);
+    const card = within(region(zone)).getByRole("button", {
+      name: `${item} ${word}`,
+    });
+    expect(card).toHaveAttribute("data-mark", mark);
+    expect(
+      within(card).getByText(mark === "correct" ? "✓" : "✕"),
+    ).toHaveAttribute("aria-hidden", "true");
+  }
+  expect(
+    screen.getByText(`${names.length - 2} of ${names.length} correct`),
+  ).toBeInTheDocument();
+});
+
+test("an incorrect card shows its name, the icon and Incorrect, and no category", async () => {
+  const user = setUp();
+  await chooseHabitat(user);
+  await placeAll(user, wrongTwo);
+  await user.click(checkButton());
+  const item = afterChoose[0];
+  const card = screen.getByRole("button", { name: `${item} Incorrect` });
+  expect(card).toHaveTextContent(`${item} ✕Incorrect`, {
+    normalizeWhitespace: false,
+  });
+  for (const category of habitat.categories)
+    expect(card.textContent).not.toContain(category);
+});
+
+test("Retry is disabled while no card is marked incorrect", async () => {
+  const user = setUp();
+  expect(retryButton()).toBeDisabled();
+  await chooseHabitat(user);
+  await placeAll(user);
+  expect(retryButton()).toBeDisabled();
+  await user.click(checkButton());
+  expect(
+    screen.getByText(`${names.length} of ${names.length} correct`),
+  ).toBeInTheDocument();
+  expect(retryButton()).toBeDisabled();
+});
+
+test("Retry returns only the incorrect cards to the pool, removes their marks and the score, and keeps the correct marks", async () => {
+  const user = setUp();
+  await chooseHabitat(user);
+  await placeAll(user, wrongTwo);
+  await user.click(checkButton());
+  expect(retryButton()).toBeEnabled();
+  await user.click(retryButton());
+  expect(cardsIn("Unsorted")).toEqual(
+    shuffle(
+      afterChoose.filter((item) => item in wrongTwo),
+      zero,
+    ),
+  );
+  for (const item of Object.keys(wrongTwo))
+    expect(screen.getByRole("button", { name: item })).not.toHaveAttribute(
+      "data-mark",
+    );
+  for (const item of names.filter((name) => !(name in wrongTwo)))
+    expect(
+      within(region(answer(item))).getByRole("button", {
+        name: `${item} Correct`,
+      }),
+    ).toHaveAttribute("data-mark", "correct");
+  expect(screen.queryByText(/ correct$/)).toBeNull();
+  expect(checkButton()).toBeDisabled();
+  expect(screen.getByText(hint)).toBeInTheDocument();
+  expect(retryButton()).toBeDisabled();
+});
+
+test("selecting a correct card removes its mark and the score", async () => {
+  const user = setUp();
+  await chooseHabitat(user);
+  await placeAll(user, wrongTwo);
+  await user.click(checkButton());
+  const item = afterChoose[1];
+  await user.click(screen.getByRole("button", { name: `${item} Correct` }));
+  const card = screen.getByRole("button", { name: `${item} Selected` });
+  expect(card).not.toHaveAttribute("data-mark");
+  expect(screen.queryByText(/ correct$/)).toBeNull();
+  expect(
+    screen.getByRole("button", { name: `${afterChoose[3]} Correct` }),
+  ).toBeInTheDocument();
+});
+
+test("Reset removes every mark and the score", async () => {
+  const user = setUp();
+  await chooseHabitat(user);
+  await placeAll(user, wrongTwo);
+  await user.click(checkButton());
+  await user.click(screen.getByRole("button", { name: "Reset" }));
+  expect(document.querySelector("[data-mark]")).toBeNull();
+  expect(cardsIn("Unsorted")).toEqual(shuffle(afterChoose, zero));
+  expect(screen.queryByText(/ correct$/)).toBeNull();
+});
+
+test("choosing another dimension removes every mark and the score", async () => {
+  const user = setUp();
+  await chooseHabitat(user);
+  await placeAll(user, wrongTwo);
+  await user.click(checkButton());
+  await user.click(screen.getByRole("button", { name: diet.name }));
+  expect(document.querySelector("[data-mark]")).toBeNull();
+  expect(cardsIn("Unsorted")).toEqual(shuffle(afterChoose, zero));
+  expect(screen.queryByText(/ correct$/)).toBeNull();
+});

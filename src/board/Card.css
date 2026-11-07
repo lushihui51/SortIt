@@ -24,6 +24,16 @@
   box-shadow: 0 0 0 var(--selected-ring-width) var(--color-card-selected-ring);
 }
 
+/* The colour of a mark; the card's icon carries the same verdict for a
+   learner who cannot tell the colours apart. */
+.card[data-mark="correct"] {
+  background: var(--color-correct);
+}
+
+.card[data-mark="incorrect"] {
+  background: var(--color-incorrect);
+}
+
 .card:focus-visible {
   outline: var(--focus-ring-width) solid var(--color-focus);
   outline-offset: var(--focus-ring-offset);

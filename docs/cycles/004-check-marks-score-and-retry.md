@@ -125,7 +125,7 @@ What to read:
 
 **Status**
 
-- [ ]
+- [x]
 
 **Goal**
 
@@ -195,4 +195,23 @@ The learner presses Check once the pool is empty and reads a mark on every card 
 
 **Debrief**
 
-None.
+Evidence:
+
+- `npm run typecheck` printed `> tsc -b` and nothing else, and exited 0.
+- `npm test` printed `Test Files  5 passed (5)` and `Tests  65 passed (65)`. `npx vitest run --reporter=verbose src/board/Board.test.tsx` printed `Tests  21 passed (21)`: the 12 tests of cycle 003 and the 9 named in Details.
+- The `grep` over src/board/*.css printed nothing.
+- `npm run dev`, driven by a Playwright script in headless Chromium from outside the repository at 1366 by 768, with Habitat chosen and all 30 cards in the pool: `document.documentElement.scrollHeight <= window.innerHeight` gave `true` (768 against 768, `scrollWidth` 1366). After Check, with the score shown, it still gave `true` at 768.
+- Same script and size: before a dimension and with Habitat chosen, Check was disabled and its next sibling read `Place every card to check`, and Retry was disabled. With every card placed by click, two of them in a wrong zone, the pool held 0 cards, Check was enabled and the hint was gone. After Check all 30 cards had `data-mark`: 28 `correct` with the icon `✓` on `rgb(205, 235, 207)`, and 2 `incorrect`, reading `Fennec Fox ✕Incorrect` and `Desert Tortoise ✕Incorrect`, on `rgb(247, 208, 203)`; the score read `28 of 30 correct`. After Retry the pool held only `Desert Tortoise` and `Fennec Fox`, 28 cards still bore `correct`, the score was gone, Check was disabled and the hint was back. A mouse press on `Seahorse`, marked correct in Ocean, and a move of 30 by 30 pixels gave it the class `card card-dragging` and no `data-mark` mid-drag; Escape and a release left it in Ocean with no mark, no transform and the text `Seahorse`. One console error, a resource 404, was logged; a second load logged no failed response, so it came from a request after load, as the /favicon.ico 404 of cycle 003 did.
+
+Departures and choices:
+
+- The bar's order is the picker, Reset, Check, the hint, Retry and a `div` with `aria-live="polite"` holding the score `p`. The hint stands between Check and Retry so that it is beside Check; the hint and the score are never shown together, since the hint shows only while a card is in the pool or no dimension is chosen.
+- Check and Retry share the class `board-action`, which takes Reset's look, focus ring and phone hit size in src/board/Board.css; a disabled one reads in `--color-label` with the default cursor. The two mark colours are card backgrounds.
+- The card holds a space, the icon span and the hidden word, so its accessible name is `<item> Correct` or `<item> Incorrect` and its text content `<item> ✓Correct`.
+- The tests' `placeAll` helper places the pool's cards in the pool's order by click, into the zone a map names for a card or else its Habitat answer. Beyond the named assertions, the tests check that the hint is Check's next sibling, that each mark's icon span has `aria-hidden="true"` and that each marked card lies in its zone, and Reset and the change of dimension tests check the pool's order.
+- In a 390 by 664 phone emulation every bar button measured 44 high and `scrollWidth` was 390.
+
+What to read:
+
+- `Card` in src/board/Card.tsx, for the spans of the mark and their order before `Selected`.
+- The browser checks ran in headless Chromium, not in Chrome; Firefox, Safari and touch are left to the hand check of the cycle's Judgement.

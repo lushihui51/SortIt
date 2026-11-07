@@ -15,6 +15,7 @@ export default function Zone({
   category,
   items,
   selected,
+  marks,
   disabled,
   onPressCard,
   onPressLabel,
@@ -43,6 +44,7 @@ export default function Zone({
           key={item}
           item={item}
           selected={item === selected}
+          mark={marks[item] ?? null}
           disabled={disabled}
           onPress={onPressCard}
         />

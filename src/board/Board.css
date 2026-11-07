@@ -17,6 +17,10 @@
 
 .board-reset {
   margin-inline-start: auto;
+}
+
+.board-reset,
+.board-action {
   padding: var(--control-padding-block) var(--control-padding-inline);
   background: var(--color-control);
   border: var(--border-width) solid var(--color-control-border);
@@ -24,7 +28,24 @@
   cursor: pointer;
 }
 
-.board-reset:focus-visible {
+.board-action:disabled {
+  color: var(--color-label);
+  cursor: default;
+}
+
+.board-hint,
+.board-score {
+  margin: 0;
+  color: var(--color-label);
+}
+
+.board-score {
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.board-reset:focus-visible,
+.board-action:focus-visible {
   outline: var(--focus-ring-width) solid var(--color-focus);
   outline-offset: var(--focus-ring-offset);
 }
@@ -51,7 +72,8 @@
     grid-auto-rows: auto;
   }
 
-  .board-reset {
+  .board-reset,
+  .board-action {
     min-width: var(--hit-size);
     min-height: var(--hit-size);
   }

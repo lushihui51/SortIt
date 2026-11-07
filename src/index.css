@@ -17,6 +17,8 @@
   --color-control-pressed: #1f2328;
   --color-control-pressed-text: #ffffff;
   --color-shadow-dragging: rgb(0 0 0 / 0.25);
+  --color-correct: #cdebcf;
+  --color-incorrect: #f7d0cb;
 
   /* Sizes */
   --font-size: 1rem;
