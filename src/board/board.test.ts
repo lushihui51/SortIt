@@ -4,6 +4,7 @@ import {
   createBoardReducer,
   emptyBoard,
   type RandomSource,
+  score,
   shuffle,
 } from "./board";
 import type { ItemSet } from "../set/itemSet";
@@ -68,6 +69,7 @@ test("load puts every item in the pool in the shuffled order with no dimension a
     dimension: null,
     places: allInPool,
     order: ["Deer", "Whale", "Wolf", "Shark"],
+    marks: {},
     selected: null,
   });
 });
@@ -109,9 +111,42 @@ test("chooseDimension with another dimension sets it, empties the zones, reshuff
     dimension: "Diet",
     places: allInPool,
     order: ["Wolf", "Shark", "Deer", "Whale"],
+    marks: {},
     selected: null,
   });
 });
+
+/** Habitat chosen, order Whale, Wolf, Shark, Deer, and only Shark in its answer's zone. */
+function placedOneRight(): BoardState {
+  let state = habitat();
+  state = reduce(state, { type: "place", item: "Shark", place: zone("Ocean") });
+  state = reduce(state, {
+    type: "place",
+    item: "Whale",
+    place: zone("Forest"),
+  });
+  state = reduce(state, { type: "place", item: "Wolf", place: zone("Ocean") });
+  state = reduce(state, { type: "place", item: "Deer", place: zone("Ocean") });
+  return state;
+}
+
+const oneRightPlaces = {
+  Shark: zone("Ocean"),
+  Whale: zone("Forest"),
+  Wolf: zone("Ocean"),
+  Deer: zone("Ocean"),
+};
+
+const oneRightMarks = {
+  Shark: "correct",
+  Whale: "incorrect",
+  Wolf: "incorrect",
+  Deer: "incorrect",
+} as const;
+
+function checked(): BoardState {
+  return reduce(placedOneRight(), { type: "check" });
+}
 
 test("select before a dimension is chosen returns the same state", () => {
   const state = loaded();
@@ -220,8 +255,126 @@ test("reset returns every card to the pool, reshuffles, clears the selection and
     dimension: "Habitat",
     places: allInPool,
     order: ["Wolf", "Shark", "Deer", "Whale"],
+    marks: {},
     selected: null,
   });
+});
+
+test("check while a card is in the pool returns the same state", () => {
+  const state = reduce(habitat(), {
+    type: "place",
+    item: "Shark",
+    place: zone("Ocean"),
+  });
+  expect(reduce(state, { type: "check" })).toBe(state);
+});
+
+test("check before a dimension is chosen returns the same state", () => {
+  const state = loaded();
+  expect(reduce(state, { type: "check" })).toBe(state);
+});
+
+test("check marks each card correct or incorrect by where it lies and clears the selection", () => {
+  const selected = reduce(placedOneRight(), { type: "select", item: "Wolf" });
+  expect(reduce(selected, { type: "check" })).toEqual({
+    dimension: "Habitat",
+    places: oneRightPlaces,
+    order: ["Whale", "Wolf", "Shark", "Deer"],
+    marks: oneRightMarks,
+    selected: null,
+  });
+});
+
+test("place leaves the marks as they are", () => {
+  const state = checked();
+  expect(
+    reduce(state, { type: "place", item: "Wolf", place: zone("Forest") }),
+  ).toEqual({ ...state, places: { ...oneRightPlaces, Wolf: zone("Forest") } });
+});
+
+test("retry returns only the incorrect cards to the pool and permutes them among the positions they held", () => {
+  const random = fixedRandom([0, 0]);
+  expect(reduce(checked(), { type: "retry", random })).toEqual({
+    dimension: "Habitat",
+    places: { Shark: zone("Ocean"), Whale: pool, Wolf: pool, Deer: pool },
+    order: ["Wolf", "Deer", "Shark", "Whale"],
+    marks: { Shark: "correct" },
+    selected: null,
+  });
+  expect(random.calls()).toBe(2);
+});
+
+test("retry while no card is marked incorrect returns the same state", () => {
+  const retried = reduce(checked(), {
+    type: "retry",
+    random: fixedRandom([0, 0]),
+  });
+  expect(reduce(retried, { type: "retry", random: zeros() })).toBe(retried);
+});
+
+test("retry before Check returns the same state", () => {
+  const state = placedOneRight();
+  expect(reduce(state, { type: "retry", random: zeros() })).toBe(state);
+});
+
+test("select on a marked card removes its mark", () => {
+  const state = checked();
+  const { Shark: _shark, ...rest } = oneRightMarks;
+  expect(reduce(state, { type: "select", item: "Shark" })).toEqual({
+    ...state,
+    marks: rest,
+    selected: "Shark",
+  });
+});
+
+test("dragStart on a marked card removes its mark", () => {
+  const state = checked();
+  const { Shark: _shark, ...rest } = oneRightMarks;
+  expect(reduce(state, { type: "dragStart", item: "Shark" })).toEqual({
+    ...state,
+    marks: rest,
+  });
+});
+
+test("dragStart on an unmarked card with no selection returns the same state", () => {
+  const state = reduce(checked(), {
+    type: "retry",
+    random: fixedRandom([0, 0]),
+  });
+  expect(reduce(state, { type: "dragStart", item: "Wolf" })).toBe(state);
+});
+
+test("reset removes every mark", () => {
+  expect(reduce(checked(), { type: "reset", random: zeros() })).toEqual({
+    dimension: "Habitat",
+    places: allInPool,
+    order: ["Wolf", "Shark", "Deer", "Whale"],
+    marks: {},
+    selected: null,
+  });
+});
+
+test("chooseDimension with another dimension removes every mark", () => {
+  expect(
+    reduce(checked(), {
+      type: "chooseDimension",
+      dimension: "Diet",
+      random: zeros(),
+    }),
+  ).toEqual({
+    dimension: "Diet",
+    places: allInPool,
+    order: ["Wolf", "Shark", "Deer", "Whale"],
+    marks: {},
+    selected: null,
+  });
+});
+
+test("score is null before Check, counts the correct cards over all cards after Check, and is null once a mark is removed", () => {
+  expect(score(placedOneRight())).toBeNull();
+  const state = checked();
+  expect(score(state)).toEqual({ correct: 1, total: 4 });
+  expect(score(reduce(state, { type: "select", item: "Wolf" }))).toBeNull();
 });
 
 test("no action changes the state, the action or the set it is given", () => {
@@ -234,6 +387,12 @@ test("no action changes the state, the action or the set it is given", () => {
     { type: "dragStart", item: "Deer" },
     { type: "place", item: "Deer", place: pool },
     { type: "reset", random: zeros() },
+    { type: "place", item: "Shark", place: zone("Ocean") },
+    { type: "place", item: "Whale", place: zone("Forest") },
+    { type: "place", item: "Wolf", place: zone("Ocean") },
+    { type: "place", item: "Deer", place: zone("Ocean") },
+    { type: "check" },
+    { type: "retry", random: fixedRandom([0, 0]) },
     { type: "chooseDimension", dimension: "Diet", random: zeros() },
     { type: "load", random: zeros() },
   ] as const;

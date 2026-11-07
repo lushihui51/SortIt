@@ -22,7 +22,7 @@ Judgement: The engineer runs `npm test` and sees the reducer's and the component
 
 **Status**
 
-- [ ]
+- [x]
 
 **Goal**
 
@@ -43,7 +43,7 @@ None.
 - src/board/board.ts must add exactly this type, this field, these actions and this function, and keep everything it exports today (ADR 003):
 
   ```ts
-  export type Mark = 'correct' | 'incorrect';
+  export type Mark = "correct" | "incorrect";
 
   export type BoardState = {
     dimension: string | null;
@@ -54,20 +54,23 @@ None.
   };
 
   export type BoardAction =
-    | { type: 'load'; random: RandomSource }
-    | { type: 'chooseDimension'; dimension: string; random: RandomSource }
-    | { type: 'select'; item: string }
-    | { type: 'dragStart'; item: string }
-    | { type: 'place'; item: string; place: Place }
-    | { type: 'check' }
-    | { type: 'retry'; random: RandomSource }
-    | { type: 'reset'; random: RandomSource };
+    | { type: "load"; random: RandomSource }
+    | { type: "chooseDimension"; dimension: string; random: RandomSource }
+    | { type: "select"; item: string }
+    | { type: "dragStart"; item: string }
+    | { type: "place"; item: string; place: Place }
+    | { type: "check" }
+    | { type: "retry"; random: RandomSource }
+    | { type: "reset"; random: RandomSource };
 
   /** The score, or null unless every card bears a mark. */
-  export function score(state: BoardState): { correct: number; total: number } | null;
+  export function score(
+    state: BoardState,
+  ): { correct: number; total: number } | null;
   ```
 
   `marks` holds an entry for a card only while it bears a mark; a card with no entry is unmarked. `emptyBoard.marks` is empty.
+
 - The actions must change as follows, and otherwise stay as they are; the reducer stays pure and returns `state` itself whenever nothing changes (ADR 003):
   - `load`, `reset`, and `chooseDimension` when it changes the dimension: `marks` becomes empty (PDR 004).
   - `select`, whenever it changes the selection: the entry of `item` in `marks` is also removed. `dragStart`: the entry of `item` in `marks` is removed and `selected` becomes null; when the card bears no mark and nothing is selected, return `state` (PDR 003: a card loses its correct mark the moment the learner takes hold of it).
@@ -84,8 +87,8 @@ None.
   - `dragStart` on a marked card removes its mark.
   - `reset` and `chooseDimension` with another dimension remove every mark.
   - `score` is null before Check, counts the correct cards over all cards after Check, and is null again once one mark is removed.
-  Every test of cycle 003 must keep passing, with `marks: {}` added to its expected states.
-- In docs/vocabulary.md the Code cells must change so that: the Check row's reads `` the `check` action of `BoardAction` in src/board/board.ts ``; the Correct mark row's reads `` `Mark` `'correct'` in src/board/board.ts ``; the Incorrect mark row's reads `` `Mark` `'incorrect'` in src/board/board.ts ``; the Score row's reads `` `score` in src/board/board.ts ``; the Retry row's reads `` the `retry` action of `BoardAction` in src/board/board.ts ``. Where cells stay as they are.
+    Every test of cycle 003 must keep passing, with `marks: {}` added to its expected states.
+- In docs/vocabulary.md the Code cells must change so that: the Check row's reads ``the `check` action of `BoardAction` in src/board/board.ts``; the Correct mark row's reads `` `Mark` `'correct'` in src/board/board.ts ``; the Incorrect mark row's reads `` `Mark` `'incorrect'` in src/board/board.ts ``; the Score row's reads `` `score` in src/board/board.ts ``; the Retry row's reads ``the `retry` action of `BoardAction` in src/board/board.ts``. Where cells stay as they are.
 
 **Out of scope**
 
@@ -101,7 +104,22 @@ None.
 
 **Debrief**
 
-None.
+Evidence:
+
+- `npm run typecheck` printed `> tsc -b` and nothing else, and exited 0.
+- `npm test` printed `Test Files  5 passed (5)` and `Tests  56 passed (56)`. With `--reporter=verbose`, src/board/board.test.ts lists 33 tests passed and src/board/Board.test.tsx lists 12 passed; `git diff HEAD -- src/board/Board.test.tsx` is empty, so its tests are the ones of cycle 003. `npm run build` also succeeds.
+
+Departures and choices:
+
+- The string literals of `Mark` are in double quotes, as Prettier formats the rest of src/board/board.ts; the type is the one Details gives.
+- `reset` and `chooseDimension` removing every mark are two tests, not one. Beyond the listed tests, the file adds: `check` before a dimension is chosen returns the same state; `place` leaves the marks as they are; `retry` before Check returns the same state; `dragStart` on an unmarked card with no selection returns the same state; and the test that no action changes its state, action or set now also runs four `place` actions, `check` and `retry`.
+- The `retry` test has one correct card in the middle of `order` and three incorrect cards around it, so it shows the correct card keeping its position while the three returned cards permute among positions 0, 1 and 3.
+- `sameBoard` in src/board/board.ts now compares `marks` too, so that `dragStart` on an unmarked card with no selection returns `state` through the existing same-object check rather than a special case.
+
+What to read:
+
+- The `retry` case of `createBoardReducer` in src/board/board.ts, for the position rule.
+- `score` in src/board/board.ts: by the rule as written, a board with no cards, `emptyBoard`, scores `{ correct: 0, total: 0 }` rather than null. `Board` never renders `emptyBoard`, because `load` runs in the reducer's initializer, so no screen shows it; no test pins that value.
 
 ### T2 — Check, marks, score and Retry on the board
 
@@ -132,7 +150,7 @@ The learner presses Check once the pool is empty and reads a mark on every card 
 **Details**
 
 - The props must change exactly so: `PoolProps` and so `ZoneProps` gain `marks: Record<string, Mark>`, and `CardProps` gains `mark: Mark | null`. Nothing else in the props changes.
-- The screen must show only words docs/vocabulary.md gives, in addition to those cycle 003 shows: `Check`, `Place every card to check`, `Retry`, `Correct`, `Incorrect` and the score as the number of correct cards, ` of `, the number of all cards and ` correct`, as in `27 of 30 correct`. Never any other text.
+- The screen must show only words docs/vocabulary.md gives, in addition to those cycle 003 shows: `Check`, `Place every card to check`, `Retry`, `Correct`, `Incorrect` and the score as the number of correct cards, `of`, the number of all cards and ` correct`, as in `27 of 30 correct`. Never any other text.
 - The document must gain this structure (PDR 003):
   - Beside Reset stands a `button` of `type="button"` reading `Check`, which has the `disabled` attribute while any card is in the pool or no dimension is chosen, and dispatches `check` when pressed. While it is disabled, a `span` reading `Place every card to check` stands beside it; otherwise the span is absent.
   - Beside Check stands a `button` of `type="button"` reading `Retry`, which has the `disabled` attribute unless some card bears the mark `incorrect`, and dispatches `retry` with the board's `random` when pressed.
@@ -150,10 +168,10 @@ The learner presses Check once the pool is empty and reads a mark on every card 
   - `selecting a correct card removes its mark and the score`
   - `Reset removes every mark and the score`
   - `choosing another dimension removes every mark and the score`
-  Guidance: `screen.getByRole('button', { name: 'Penguin Incorrect' })` finds a marked card by its full accessible name, where Penguin stands for whatever item the test picked.
+    Guidance: `screen.getByRole('button', { name: 'Penguin Incorrect' })` finds a marked card by its full accessible name, where Penguin stands for whatever item the test picked.
 - In docs/vocabulary.md the rows must change so that:
   - Check: Where reads `A button beside Reset`; Code gains `; the Check button in `Board` in src/board/Board.tsx`.
-  - Hint: Where reads `Beside Check while it is disabled`; Code reads `` the hint in `Board` in src/board/Board.tsx ``.
+  - Hint: Where reads `Beside Check while it is disabled`; Code reads ``the hint in `Board` in src/board/Board.tsx``.
   - Correct mark: Where reads `On a correct card after Check, as a colour, an icon and hidden text`; Code gains `; the mark in `Card` in src/board/Card.tsx`.
   - Incorrect mark: Where reads `On an incorrect card after Check, as a colour, an icon and hidden text`; Code gains `; the mark in `Card` in src/board/Card.tsx`.
   - Score: Where reads `Beside the buttons after Check`; Code gains `; the score in `Board` in src/board/Board.tsx`.
