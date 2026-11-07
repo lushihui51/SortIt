@@ -1,0 +1,41 @@
+# Backlog
+
+- B1 What the learner sees and does on the one screen before any check: every item in an unsorted pool in random order beside a dimension picker, one labelled drop zone per category once a dimension is chosen, and a card dragged into any zone, between zones, or back to the pool.
+  - Reason: the requirements describe this loop as the whole app, but nothing records it as a decision; what the board shows before a dimension is chosen, and whether the pool reshuffles, are still to settle.
+  - Owner: /product-decide
+- B2 When a placement is judged and what the learner sees of the verdict: whether Check enables only once every item is placed and judges all at once, or each drop is judged on its own; each card marked correct or incorrect by colour and an icon together; and a score of correct over total.
+  - Reason: the requirements assume judging on Check but list judging on each drop as open; the marking and the score are what the learner gets from the app, and colour-only feedback is ruled out.
+  - Owner: /product-decide
+- B3 What each way of clearing the board does and which are in the MVP: Reset returns every item to the pool, choosing another dimension resets the board, and Retry returns only the incorrect items to the pool.
+  - Reason: the requirements rank Reset as Must and Retry as Should, with the cut line for Retry left to a deadline the document does not give.
+  - Owner: /product-decide
+- B4 Whether the MVP offers tap-to-select then tap-a-zone as an alternative to dragging, for touch and keyboard.
+  - Reason: the requirements rank it Should, with its cut line left to a deadline the document does not give; a learner on a phone or a keyboard can tell whether it exists.
+  - Owner: /product-decide
+- B5 Which devices and board sizes the app serves: current desktop Chrome, Safari and Firefox and a phone in portrait, with up to about 30 items and 6 categories per dimension without scrolling issues on desktop.
+  - Reason: the requirements name the devices and the sizes but nothing records them as a decision, and what the board does beyond those sizes is unsettled.
+  - Owner: /product-decide
+- B6 What an item set must satisfy and what the learner sees when it does not: every item has exactly one answer in every dimension, drawn from that dimension's categories, and a set that breaks this shows a clear error in place of the board.
+  - Reason: the requirements assume one category per item per dimension and ask whether more than one is allowed; the error is what the learner sees instead of a broken quiz.
+  - Owner: /product-decide
+- B7 Which subject the first item set covers and who writes its content, animals being a placeholder.
+  - Reason: the document lists this as open, and the MVP cannot be used without a set.
+  - Owner: /product-decide
+- B8 The app's name, "Sort It" being a working title.
+  - Reason: the document lists this as open, and the learner sees the name.
+  - Owner: /product-decide
+- B9 What the MVP leaves out and that nothing persists: no accounts, saved progress or leaderboards, no in-app editor for item sets, one item set only, no timers, scoring history or spaced repetition, and a page refresh starts over.
+  - Reason: the document defers each of these to keep the build short, and a learner would notice each one, so the deferral is a product decision.
+  - Owner: /product-decide
+- B10 How the app is delivered: built to static files with no server or database, and hosted free, the document naming Vercel, Netlify and GitHub Pages without choosing one.
+  - Reason: the document requires a static, free deployment and leaves the host open; a learner cannot tell which host serves the files.
+  - Owner: /code-decide
+- B11 Which framework, language, build tool and styling the app is written in; the document suggests React with TypeScript on Vite and Tailwind or plain CSS.
+  - Reason: the document offers these as suggestions on the ground of fastest setup, and a learner cannot tell them apart.
+  - Owner: /code-decide
+- B12 How drag and drop is implemented and how the board's placements are held; the document suggests dnd-kit for its mouse, touch and keyboard sensors and a map from each item to its category or the pool.
+  - Reason: the document offers these as suggestions, and the library chosen bears on what B4 can deliver.
+  - Owner: /code-decide
+- B13 The shape of the data file, where it lives, and how it is loaded and validated; the document shows dimensions with an id, a name and categories, items with an id, a label and an answer per dimension, bundled from one file under the source tree and checked on load.
+  - Reason: the shape and the loader are suggested, not decided, and the rule B6 settles must be enforced by them.
+  - Owner: /code-decide
