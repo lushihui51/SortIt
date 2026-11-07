@@ -1,3 +1,4 @@
+import { useDroppable } from "@dnd-kit/core";
 import { useId } from "react";
 import Card from "./Card";
 
@@ -12,7 +13,11 @@ export type PoolProps = {
   onPressLabel: () => void;
 };
 
-/** The pool: a region named by its label "Unsorted", holding its cards. */
+/**
+ * The pool: a region named by its label "Unsorted", holding its cards. A card
+ * dropped on it is placed in the pool, so it must be rendered inside the
+ * board's `DndContext`.
+ */
 export default function Pool({
   items,
   selected,
@@ -21,8 +26,12 @@ export default function Pool({
   onPressLabel,
 }: PoolProps) {
   const labelId = useId();
+  const { setNodeRef } = useDroppable({
+    id: "pool",
+    data: { place: { kind: "pool" } },
+  });
   return (
-    <section aria-labelledby={labelId}>
+    <section ref={setNodeRef} aria-labelledby={labelId}>
       <button type="button" id={labelId} onClick={onPressLabel}>
         Unsorted
       </button>

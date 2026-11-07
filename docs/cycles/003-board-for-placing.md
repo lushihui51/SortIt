@@ -263,7 +263,7 @@ The page shows the picker, the pool, the prompt and, once a dimension is chosen,
 
 **Status**
 
-- [ ]
+- [x]
 
 **Goal**
 
@@ -313,7 +313,13 @@ The learner drags a card by mouse or touch from the pool to a zone, between zone
 
 **Debrief**
 
-None.
+- `npm run typecheck` printed `> tsc -b` and exited 0.
+- `npm test` printed `Test Files  5 passed (5)` and `Tests  43 passed (43)`; `npx vitest run --reporter=verbose` lists the same 43 test names as at the end of T2, the 12 of src/board/Board.test.tsx among them, and src/board/Board.test.tsx is unchanged. `npm run build` succeeds.
+- `npm ls @dnd-kit/core` printed the root line `sort-it@0.0.0 /home/jadenlu/Projects/SortIt` and one dependency line, `└── @dnd-kit/core@6.3.1`. package.json gains only `"@dnd-kit/core": "^6.3.1"`; @dnd-kit/accessibility and @dnd-kit/utilities appear in package-lock.json only as dependencies of @dnd-kit/core.
+- `npm run dev`, driven by a Playwright script in headless Chromium from outside the repository, at 1366 by 768 with Habitat chosen: a mouse drag of `Hippopotamus` from the pool to `Ocean` left `Ocean` holding it, with `translate3d(553.93px, 42px, 0px)` on the card mid-drag and no card selected after the drop; a drag from `Ocean` to `Forest` left `Ocean` empty and `Forest` holding it; a drag from `Forest` to `Unsorted` left `Forest` empty and the card in the pool; a press and release on `Crocodile` without movement gave `Crocodile Selected`; with `Crocodile` in `Desert`, a press on it, a move of 4 by 3 pixels inside `Desert` and a release gave no transform and left it in `Desert`, selected by the click; a drag of it onto `Reset`, over no droppable, left it in `Desert`. In a context 390 by 844 with touch and mobile emulation, a touch drag sent as Chrome DevTools Protocol touch events moved `Duck` from the pool to `Ocean`. After the drags the live region and the hidden description dnd-kit adds both held empty text, no card carried `aria-roledescription`, and a card's computed `touch-action` was `none`. The only console error was the 404 for /favicon.ico seen in T2.
+- `npm run dev`, before a dimension is chosen: a mouse press on the first card and a move of 60 by 60 pixels gave the card no transform, and the pool's order was unchanged after the release.
+- No departure from guidance: the activation distance is 8 pixels, and the transform is written by hand as `translate3d`.
+- Read `Card` in src/board/Card.tsx: its button gains the class `card`, which src/board/Card.css selects for `touch-action: none`; that class is the only attribute added besides the ref, the listeners and the transform. `dragEnd` in `Board` in src/board/Board.tsx casts the droppable's `data.current` to `{ place: Place }`, which `Pool` and `Zone` are the only writers of. A click that follows an activated drag never reaches the card, because dnd-kit's pointer sensor stops it, so a drop does not also select the card it moved. The browser checks ran in headless Chromium with touch sent through the DevTools Protocol, not in Chrome's own device toolbar; the hand check in Chrome, Firefox and Safari is the cycle's Judgement.
 
 ### T4 — Layout and stylesheet
 

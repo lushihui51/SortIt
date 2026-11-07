@@ -1,10 +1,15 @@
+import { useDroppable } from "@dnd-kit/core";
 import { useId } from "react";
 import Card from "./Card";
 import type { PoolProps } from "./Pool";
 
 export type ZoneProps = PoolProps & { category: string };
 
-/** One zone: a region named by its label, the category's name, holding its cards. */
+/**
+ * One zone: a region named by its label, the category's name, holding its
+ * cards. A card dropped on it is placed in the zone, so it must be rendered
+ * inside the board's `DndContext`.
+ */
 export default function Zone({
   category,
   items,
@@ -14,8 +19,12 @@ export default function Zone({
   onPressLabel,
 }: ZoneProps) {
   const labelId = useId();
+  const { setNodeRef } = useDroppable({
+    id: `zone:${category}`,
+    data: { place: { kind: "zone", category } },
+  });
   return (
-    <section aria-labelledby={labelId}>
+    <section ref={setNodeRef} aria-labelledby={labelId}>
       <button type="button" id={labelId} onClick={onPressLabel}>
         {category}
       </button>

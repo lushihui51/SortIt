@@ -1,0 +1,4 @@
+/* A touch that moves a card drags it instead of scrolling the page. */
+.card {
+  touch-action: none;
+}
