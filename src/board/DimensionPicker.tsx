@@ -1,3 +1,5 @@
+import "./DimensionPicker.css";
+
 export type DimensionPickerProps = {
   /** The dimensions' names, in the order shown. */
   dimensions: readonly string[];
@@ -16,12 +18,13 @@ export default function DimensionPicker({
   onChoose,
 }: DimensionPickerProps) {
   return (
-    <fieldset>
-      <legend>Sort by</legend>
+    <fieldset className="picker">
+      <legend className="picker-legend">Sort by</legend>
       {dimensions.map((dimension) => (
         <button
           key={dimension}
           type="button"
+          className="picker-dimension"
           aria-pressed={dimension === chosen}
           onClick={() => onChoose(dimension)}
         >

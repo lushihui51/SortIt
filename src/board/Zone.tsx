@@ -1,6 +1,7 @@
 import { useDroppable } from "@dnd-kit/core";
 import { useId } from "react";
 import Card from "./Card";
+import "./Zone.css";
 import type { PoolProps } from "./Pool";
 
 export type ZoneProps = PoolProps & { category: string };
@@ -19,13 +20,22 @@ export default function Zone({
   onPressLabel,
 }: ZoneProps) {
   const labelId = useId();
-  const { setNodeRef } = useDroppable({
+  const { setNodeRef, isOver } = useDroppable({
     id: `zone:${category}`,
     data: { place: { kind: "zone", category } },
   });
   return (
-    <section ref={setNodeRef} aria-labelledby={labelId}>
-      <button type="button" id={labelId} onClick={onPressLabel}>
+    <section
+      ref={setNodeRef}
+      aria-labelledby={labelId}
+      className={isOver ? "zone zone-over" : "zone"}
+    >
+      <button
+        type="button"
+        id={labelId}
+        className="zone-label"
+        onClick={onPressLabel}
+      >
         {category}
       </button>
       {items.map((item) => (

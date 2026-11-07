@@ -18,6 +18,7 @@ import {
 import DimensionPicker from "./DimensionPicker";
 import Pool from "./Pool";
 import Zone from "./Zone";
+import "./Board.css";
 
 // dnd-kit announces drags and describes draggables in words of its own; the
 // board speaks only the app's words, so every announcement is silent.
@@ -101,25 +102,29 @@ export default function Board({
       onDragCancel={() => {}}
     >
       <div
+        className="board"
         onKeyDown={(event) => {
           if (event.key === "Escape" && state.selected !== null) {
             select(state.selected);
           }
         }}
       >
-        <DimensionPicker
-          dimensions={set.dimensions.map((dimension) => dimension.name)}
-          chosen={state.dimension}
-          onChoose={(dimension) =>
-            dispatch({ type: "chooseDimension", dimension, random })
-          }
-        />
-        <button
-          type="button"
-          onClick={() => dispatch({ type: "reset", random })}
-        >
-          Reset
-        </button>
+        <div className="board-bar">
+          <DimensionPicker
+            dimensions={set.dimensions.map((dimension) => dimension.name)}
+            chosen={state.dimension}
+            onChoose={(dimension) =>
+              dispatch({ type: "chooseDimension", dimension, random })
+            }
+          />
+          <button
+            type="button"
+            className="board-reset"
+            onClick={() => dispatch({ type: "reset", random })}
+          >
+            Reset
+          </button>
+        </div>
         <Pool
           items={itemsIn({ kind: "pool" })}
           selected={state.selected}
@@ -127,21 +132,23 @@ export default function Board({
           onPressCard={select}
           onPressLabel={() => send({ kind: "pool" })}
         />
-        {disabled ? (
-          <p>Choose how to sort to begin</p>
-        ) : (
-          categories.map((category) => (
-            <Zone
-              key={category}
-              category={category}
-              items={itemsIn({ kind: "zone", category })}
-              selected={state.selected}
-              disabled={disabled}
-              onPressCard={select}
-              onPressLabel={() => send({ kind: "zone", category })}
-            />
-          ))
-        )}
+        <div className="board-zones">
+          {disabled ? (
+            <p className="board-prompt">Choose how to sort to begin</p>
+          ) : (
+            categories.map((category) => (
+              <Zone
+                key={category}
+                category={category}
+                items={itemsIn({ kind: "zone", category })}
+                selected={state.selected}
+                disabled={disabled}
+                onPressCard={select}
+                onPressLabel={() => send({ kind: "zone", category })}
+              />
+            ))
+          )}
+        </div>
       </div>
     </DndContext>
   );

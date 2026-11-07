@@ -1,6 +1,7 @@
 import { useDroppable } from "@dnd-kit/core";
 import { useId } from "react";
 import Card from "./Card";
+import "./Pool.css";
 
 export type PoolProps = {
   /** The item names of the cards shown here, in the order shown. */
@@ -26,13 +27,22 @@ export default function Pool({
   onPressLabel,
 }: PoolProps) {
   const labelId = useId();
-  const { setNodeRef } = useDroppable({
+  const { setNodeRef, isOver } = useDroppable({
     id: "pool",
     data: { place: { kind: "pool" } },
   });
   return (
-    <section ref={setNodeRef} aria-labelledby={labelId}>
-      <button type="button" id={labelId} onClick={onPressLabel}>
+    <section
+      ref={setNodeRef}
+      aria-labelledby={labelId}
+      className={isOver ? "pool pool-over" : "pool"}
+    >
+      <button
+        type="button"
+        id={labelId}
+        className="pool-label"
+        onClick={onPressLabel}
+      >
         Unsorted
       </button>
       {items.map((item) => (

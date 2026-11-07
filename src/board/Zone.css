@@ -1,0 +1,49 @@
+.zone {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  gap: var(--gap-small);
+  padding: var(--region-padding);
+  background: var(--color-region);
+  border: var(--region-border-width) solid var(--color-region-border);
+  border-radius: var(--region-radius);
+  min-height: var(--region-min-height);
+}
+
+/* Marks the zone a dragged card would land in if released now. */
+.zone-over {
+  background: var(--color-region-over);
+  border-color: var(--color-region-over-border);
+}
+
+.zone-label {
+  flex-basis: var(--full-row);
+  padding: 0;
+  background: none;
+  border: 0;
+  color: var(--color-label);
+  font-weight: 600;
+  text-align: start;
+  cursor: pointer;
+}
+
+/* Stretches the label's hit area over the whole zone, so a tap anywhere in it
+   outside a card presses the label; the cards stand above it. */
+.zone-label::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: var(--region-radius);
+}
+
+.zone-label:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-focus);
+  outline-offset: var(--focus-ring-offset);
+}
+
+@media (max-width: 720px) {
+  .zone-label {
+    min-height: var(--hit-size);
+  }
+}

@@ -16,7 +16,7 @@ export type CardProps = {
 export default function Card({ item, selected, disabled, onPress }: CardProps) {
   // The draggable's `attributes` are left off the button: they add a role
   // description and a description in words the app never shows.
-  const { setNodeRef, listeners, transform } = useDraggable({
+  const { setNodeRef, listeners, transform, isDragging } = useDraggable({
     id: item,
     disabled,
   });
@@ -24,7 +24,11 @@ export default function Card({ item, selected, disabled, onPress }: CardProps) {
     <button
       ref={setNodeRef}
       type="button"
-      className="card"
+      className={
+        "card" +
+        (selected ? " card-selected" : "") +
+        (isDragging ? " card-dragging" : "")
+      }
       disabled={disabled}
       onClick={() => onPress(item)}
       style={

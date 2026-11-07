@@ -325,7 +325,7 @@ The learner drags a card by mouse or touch from the pool to a zone, between zone
 
 **Status**
 
-- [ ]
+- [x]
 
 **Goal**
 
@@ -379,4 +379,13 @@ The board fits a desktop screen without scrolling at the sizes PDR 001 promises 
 
 **Debrief**
 
-None.
+- `npm run typecheck` printed `> tsc -b` and exited 0. `npm test` printed `Test Files  5 passed (5)` and `Tests  43 passed (43)`, the same 43 tests as at the end of T3; src/board/Board.test.tsx is unchanged. `npm run build` succeeds.
+- `grep -nE '#[0-9a-fA-F]{3,8}|\b[0-9]+(px|rem|em|vh|vw|%)' src/board/*.css | grep -v '@media'` printed nothing.
+- `npm run dev`, driven by a Playwright script from outside the repository at 1366 by 768 with Habitat chosen and all 30 cards in the pool: `document.documentElement.scrollHeight <= window.innerHeight` gave `true` (768 against 768, `scrollWidth` 1366) in headless Chromium and in headless Firefox, with six zones of 442 by 290 in three columns and two rows under a pool 107 high. Safari was not checked: Playwright's WebKit build does not launch on this Fedora host without system libraries, which I did not install. Safari is left to the hand check of the cycle's Judgement.
+- `npm run dev`, in Chromium emulating a phone at 390 by 664 with Habitat chosen: the pool spans y 64 to 528 and the six zones follow one below another at y 536, 640, 744, 848, 952 and 1056, all 366 wide; `scrollHeight` is 1164 and `scrollWidth` 390, and scrolling to the end shows the last zone whole (top 556, bottom 652 in a 664 viewport). The smallest of the 40 buttons is 44 by 44.
+- `npm run dev`: in Chromium and Firefox at the desktop size, a click on a card and then near the bottom of Desert's empty area left Desert holding the card. In the phone emulation, a tap on a card and then a tap in Arctic's empty corner left Arctic holding it. A mouse drag of a pool card held over Forest gave Forest the class `zone zone-over` and the background `rgb(227, 238, 252)`, against `rgb(255, 255, 255)` before; after the release it was `zone` and white again and Forest held the card, in both browsers. No console error was logged.
+- Also observed in both browsers: a disabled card and an enabled one have the same computed colour, background, border and opacity, and differ only in `cursor`, `default` against `grab`; after five Tabs from a selection the focused card showed a 3px solid outline.
+- Departures from guidance: none in the layout. The zones fill the remaining height as a grid of three columns inside a flex column, and the label's `::after` stretches over its region as the guidance gives.
+- Read `Board` in src/board/Board.tsx: it gains two wrapper `div`s, `board-bar` around the picker and Reset and `board-zones` around the prompt or the zones, so the zones form one grid; no text or role is added. `Card` in src/board/Card.tsx gains the classes `card-selected` and `card-dragging`, the latter from `useDraggable`'s `isDragging`, which lifts the dragged card above every region. `Pool` and `Zone` read `isOver` from `useDroppable` into the classes `pool-over` and `zone-over`.
+- Read src/board/Card.css: the selected card's outline is a `box-shadow` ring, not the CSS `outline` property, because the keyboard focus ring uses `outline` and the two must show together on a focused selected card. src/index.css also holds a `box-sizing` rule and a rule that makes buttons inherit the page's font and colour, and the custom property `--full-row`, which holds the 100% basis of a region's label, because the grep forbids the literal in a component stylesheet.
+- Outside the repository: installing Playwright's Firefox and WebKit removed the Chromium builds 1243 that ~/.cache/ms-playwright held, and I installed Chromium 1217 in their place. Another project's Playwright that needs 1243 will download it again.
