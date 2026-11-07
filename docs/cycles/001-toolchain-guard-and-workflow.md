@@ -86,8 +86,8 @@ None.
 
 **Out of scope**
 
-- A stylesheet, the board and the set: a later cycle.
-- jsdom, React Testing Library and a `test.environment` setting: the cycle that writes the first component test.
+- A stylesheet and the board: cycle 003; the set: cycle 002.
+- jsdom, React Testing Library and a `test.environment` setting: cycle 003, T2.
 - The workflow: T2.
 - A README: an unsettled decision.
 - ESLint, Prettier or any linter: never; ADR 001 names the toolchain.
