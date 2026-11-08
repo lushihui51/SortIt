@@ -1,0 +1,44 @@
+.picker {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--gap);
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+/* Floated, the legend sits in the row beside the buttons instead of on the
+   fieldset's border. */
+.picker-legend {
+  float: left;
+  padding: 0;
+  color: var(--color-label);
+}
+
+.picker-dimension {
+  padding: var(--control-padding-block) var(--control-padding-inline);
+  background: var(--color-control);
+  border: var(--border-width) solid var(--color-control-border);
+  border-radius: var(--card-radius);
+  cursor: pointer;
+}
+
+.picker-dimension[aria-pressed="true"] {
+  background: var(--color-control-pressed);
+  color: var(--color-control-pressed-text);
+  border-color: var(--color-control-pressed);
+}
+
+.picker-dimension:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-focus);
+  outline-offset: var(--focus-ring-offset);
+}
+
+@media (max-width: 720px) {
+  .picker-dimension {
+    min-width: var(--hit-size);
+    min-height: var(--hit-size);
+  }
+}

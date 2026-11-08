@@ -6,6 +6,11 @@
 
 # Commands
 
+- `npm test` runs every test, the record citation guard among them.
+- `npm run dev` serves the app for development.
+- `npm run typecheck` typechecks the app and the tests.
+- `npm run build` typechecks and builds the static files into dist/.
+
 # Hard rules
 
 - Never write under docs/ beyond what the running skill lists or the engineer orders.

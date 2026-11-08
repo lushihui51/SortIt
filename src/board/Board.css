@@ -1,0 +1,80 @@
+/* The page is one column: the picker with Reset, the pool, then the zones,
+   which take the height left over so the whole board fits one screen. */
+.board {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+  min-height: var(--page-height);
+  padding: var(--board-padding);
+}
+
+.board-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--gap);
+}
+
+.board-reset {
+  margin-inline-start: auto;
+}
+
+.board-reset,
+.board-action {
+  padding: var(--control-padding-block) var(--control-padding-inline);
+  background: var(--color-control);
+  border: var(--border-width) solid var(--color-control-border);
+  border-radius: var(--card-radius);
+  cursor: pointer;
+}
+
+.board-action:disabled {
+  color: var(--color-label);
+  cursor: default;
+}
+
+.board-hint,
+.board-score {
+  margin: 0;
+  color: var(--color-label);
+}
+
+.board-score {
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.board-reset:focus-visible,
+.board-action:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-focus);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.board-zones {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-auto-rows: minmax(var(--region-min-height), 1fr);
+  gap: var(--gap);
+}
+
+.board-prompt {
+  grid-column: 1 / -1;
+  align-self: start;
+  margin: 0;
+  color: var(--color-label);
+}
+
+@media (max-width: 720px) {
+  .board-zones {
+    flex: none;
+    grid-template-columns: minmax(0, 1fr);
+    grid-auto-rows: auto;
+  }
+
+  .board-reset,
+  .board-action {
+    min-width: var(--hit-size);
+    min-height: var(--hit-size);
+  }
+}

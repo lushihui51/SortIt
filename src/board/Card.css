@@ -1,0 +1,54 @@
+/* A touch that moves a card drags it instead of scrolling the page. The card
+   stands above its region's stretched label, so pressing it presses the card. */
+.card {
+  position: relative;
+  z-index: 1;
+  touch-action: none;
+  padding: var(--card-padding-block) var(--card-padding-inline);
+  background: var(--color-card);
+  border: var(--border-width) solid var(--color-card-border);
+  border-radius: var(--card-radius);
+  font-size: var(--font-size-small);
+  cursor: grab;
+}
+
+/* Before a dimension is chosen the pool is the learner's first view of the
+   set, so a disabled card looks like any other but for the cursor. */
+.card:disabled {
+  cursor: default;
+}
+
+.card-selected {
+  background: var(--color-card-selected);
+  border-color: var(--color-card-selected-ring);
+  box-shadow: 0 0 0 var(--selected-ring-width) var(--color-card-selected-ring);
+}
+
+/* The colour of a mark; the card's icon carries the same verdict for a
+   learner who cannot tell the colours apart. */
+.card[data-mark="correct"] {
+  background: var(--color-correct);
+}
+
+.card[data-mark="incorrect"] {
+  background: var(--color-incorrect);
+}
+
+.card:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-focus);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/* The dragged card passes over every other card and region. */
+.card-dragging {
+  z-index: 2;
+  cursor: grabbing;
+  box-shadow: var(--shadow-dragging) var(--color-shadow-dragging);
+}
+
+@media (max-width: 720px) {
+  .card {
+    min-width: var(--hit-size);
+    min-height: var(--hit-size);
+  }
+}
