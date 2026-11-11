@@ -20,7 +20,9 @@ PDR 013 brings a learner back to the deck they were on when they reload its boar
 
 PDR 013 lets a learner who has not signed in sort only the app's own deck, and opens the sign-in in a form over the screen the learner is on.
 
-A deck's address can outlive the learner's sign-in.
+The list's address and a deck's address can each outlive the learner's sign-in.
+
+Signing out brings the learner to the board of the app's own deck, so the browser's Back after signing out reaches the address the learner signed out from.
 
 A deck's address can outlive the deck: PDR 011 deletes a deck, and under PDR 013 the learner can do it from any device. An address can also name another learner's deck.
 
@@ -30,7 +32,7 @@ We will give the list of decks and each deck's board an address of its own, so t
 
 We will make a deck's address its name followed by a fixed code, open the deck by the code alone, and show the new name in the address after a rename.
 
-We will have a deck's address opened by a learner who has not signed in show the board of the app's own deck with the sign-in form open, open the deck it names once they sign in, and leave them on the app's own deck, at the app's first address, if they close the form.
+We will have the list's address or a deck's address, opened by a learner who has not signed in, show the board of the app's own deck with the sign-in form open, open the list or the deck it names once they sign in, and leave them on the app's own deck, at the app's first address, if they close the form.
 
 We will have a deck's address that a signed-in learner cannot open, because the deck is deleted or is another learner's, bring them to their list of decks with a line at the top saying the deck cannot be opened, and make the address the list's.
 
@@ -54,7 +56,7 @@ Rejected because a rename breaks every bookmark and open tab of the deck, and sp
 
 ### The app's own deck with no form, for a learner who has not signed in
 
-Rejected because the learner meets the app's own deck where they expected their own, with nothing saying why, and has to find their deck again after signing in.
+Rejected because the learner meets the app's own deck where they expected their own, with nothing saying why, and has to find their way to their list or their deck again after signing in.
 
 ### A screen of its own asking the learner to sign in
 
@@ -75,15 +77,16 @@ Rejected because it adds a screen and a press before the learner reaches their d
 - The learner moves between the list and a deck's board with Back and Forward, as on most sites.
 - A learner bookmarks a deck, or keeps it in a tab, and opens it straight onto its board, even after renaming it.
 - The learner reads in an address which deck it opens.
-- A learner whose bookmark outlives their sign-in signs in once and lands on their deck.
+- A learner whose bookmark of the list or of a deck outlives their sign-in signs in once and lands on what it names.
 - A learner whose deck cannot be opened reads why, with all their decks in front of them.
 - Nothing of a learner's deck shows to anyone else who opens its address, not even whether it exists.
 
 ### Negative
 
-- A learner who closes the sign-in form a deck's address opened finds that deck again from the list after signing in.
+- A learner who closes the sign-in form that an address opened finds their list or their deck again by hand after signing in.
 - A learner cannot share a deck by passing on its address.
 
 ### Neutral
 
+- A learner who signs out and presses Back meets the sign-in form again.
 - Every deck's address ends in a code of letters and digits after the deck's name.

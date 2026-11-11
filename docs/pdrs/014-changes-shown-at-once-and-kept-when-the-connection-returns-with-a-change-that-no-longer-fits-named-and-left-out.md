@@ -18,6 +18,12 @@ One deck can be changed from several devices, and another device can rename or d
 
 PDR 009 holds the names of cards, of dimensions and of a dimension's categories unique within a deck, and the names of a learner's decks unique among them, and PDR 011 lets the learner delete a card, a category or a dimension. A change kept late can therefore give a name another device has given meanwhile, or change something another device has deleted.
 
+PDR 010 has Save answers set, in one press, the answer of every card lying in a zone under the chosen dimension.
+
+A learner sets a large deck's answers in batches, clearing the board by Reset between them.
+
+Each answer a Save answers sets belongs to one card and one category.
+
 A learner may be in the middle of dragging a card when a late change is kept.
 
 ## Decision
@@ -29,6 +35,8 @@ We will show a line at the top of the board or of the list of decks while one or
 We will keep no change that is still waiting when the learner closes the page.
 
 We will leave out a change kept late that no longer fits the deck as kept, because its name is now taken where it is held or the card, category or dimension it changes is now deleted, return the screen to the deck as kept, and show a line at the top naming what was not kept and why, while keeping every other waiting change that still fits.
+
+We will keep, of a Save answers kept late, the answer of each card the deck still holds in a category the deck still holds, and leave out the rest as a change that no longer fits.
 
 ## Alternatives considered
 
@@ -52,6 +60,10 @@ Rejected because the learner's change disappears unnoticed.
 
 Rejected because the deck would hold names the learner never typed, and a deletion made on purpose would come back.
 
+### A Save answers kept late left out whole when any card or category it answers is deleted
+
+Rejected because one card deleted on another device loses the answers of every other card in the batch, and a learner who has cleared the board for the next batch sorts the lost ones again.
+
 ### A box over the board naming what was not kept
 
 Rejected because it interrupts the learner, possibly mid-drag.
@@ -67,12 +79,14 @@ Rejected by the product owner's choice of the line.
 - A learner keeps working through a dropped connection and loses nothing they made while the page stays open, except a change another device has meanwhile made unfit.
 - A learner sees from a line whether any change is still waiting.
 - A learner whose late change is left out reads which change it was and why.
+- A learner whose Save answers is kept late loses only the answers to cards and categories deleted meanwhile.
 - The learner never finds in a deck a repeated name, a name they did not type, or something they deleted come back, whatever order changes arrive in.
 
 ### Negative
 
 - A learner who closes the page while changes wait loses them.
 - A learner whose late change is left out redoes it by hand.
+- A learner can find fewer answers changed than the question before Save answers named.
 
 ### Neutral
 

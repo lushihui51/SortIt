@@ -24,6 +24,16 @@ A learner who has not signed in keeps their board only as long as the page stays
 
 A board kept across a reload would come back as it was left, possibly days later. A learner's deck is the same on every device, while a board kept on one device would differ from a board kept on another.
 
+PDR 015 gives the list of decks and each deck's board an address of their own, with the browser's Back on a deck's board returning to the list and Forward returning to the deck.
+
+PDR 012 opens any of a learner's decks from the list.
+
+A learner can press Back by mistake.
+
+A learner can leave a deck in the middle of a sort to look at another.
+
+PDR 004 has Reset return every card to the pool, so a learner gets a fresh board of a deck with one press.
+
 Many things a quiz app can offer sit around the sorting: leaderboards, timers, a history of scores and spaced repetition. Each is visible to the learner, and each adds to the app beyond sorting and the decks sorted.
 
 ## Decision
@@ -35,6 +45,8 @@ We will keep every change a signed-in learner makes to their decks as it is made
 We will let anyone sort the app's own deck without signing in, and ask a learner to sign in only to keep decks of their own and to make, change or delete anything in them.
 
 We will open the sign-in in a form over the screen the learner is on, and leave them on that screen as it was when they close it.
+
+We will keep each deck's board as the learner left it, with the same dimension chosen, every card where they put it and Check on or off as it was, when they come back to that deck while the page stays open, by the list of decks or by Forward.
 
 We will have a reload of a deck's board bring back the board of that same deck, with every card in the pool and no dimension chosen, and keep no board beyond the page.
 
@@ -62,6 +74,18 @@ Rejected by the product owner's choice of ways to sign in.
 
 Rejected because returning from it reloads the app, and a learner who has not signed in loses their board.
 
+### A fresh board each time a deck opens
+
+The board would show every card in the pool and no dimension chosen whenever the learner comes back to a deck. Rejected because a mistaken Back loses the learner's sort with no way back.
+
+### The board kept on Back and Forward, and fresh when the deck is opened from the list
+
+Rejected because the learner cannot tell which of the two they will get, and opening the deck again from the list loses their board.
+
+### The dimension kept, with every card back in the pool
+
+Rejected because the learner still loses their sort.
+
 ### A reload bringing back the list of decks
 
 Rejected because the learner loses their place in the app as well as their sort.
@@ -82,14 +106,16 @@ Rejected because the app is kept to sorting and to the decks the learner sorts.
 - A first-time learner sorts the app's own deck at once, without making an account.
 - A learner signs in without leaving the screen they were on, and keeps the board they were sorting.
 - A learner who reloads a deck's board stays in that deck and never meets a stale board.
+- A learner moves between the list and their decks, and presses Back by mistake, without losing a sort while the page stays open.
 
 ### Negative
 
 - A learner who wants decks of their own makes an account first.
 - A learner with no Google account makes a password and has to remember it.
-- A learner who reloads starts their sort over.
+- A learner who reloads starts their sort over, and loses the board of every deck they opened, not only the one they are on.
 - A learner keeps no score and no record of past sorts.
 
 ### Neutral
 
+- A learner who comes back to a deck wanting to start over presses Reset.
 - A learner meets the app either signed out, with the app's own deck alone, or signed in, with decks of their own.
