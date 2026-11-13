@@ -68,8 +68,7 @@ export default function Board({
     });
   }
 
-  // A press that moves less than this is a click or tap and selects the card
-  // instead of dragging it (ADR 002).
+  // A press that moves less than this is a click or tap, not a drag (ADR 014).
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
   );
