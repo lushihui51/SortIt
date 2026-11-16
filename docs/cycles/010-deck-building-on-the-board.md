@@ -274,8 +274,9 @@ acts?: BoardActs;
 
 **Out of scope**
 
-- The ⓘ on each dimension and on each zone's label that drawings 1, 2, 5 and 6 show, and Delete in a panel: T4.
+- The ⓘ on each dimension and on each zone's label that drawings 1, 2 and 6 show, and Delete in a panel: T4.
 - The "Save answers" button that drawings 1, 2, 5 and 6 show: T5.
+- The arrow back to the list of decks as drawing 6 draws it, in a control's box with padding: never; cycle 009 builds it as drawing 1 draws it, in the icon button's box.
 - A separate step that asks for a deck's first dimension, or a button that turns into a field: never.
 - A field, or the prompt of a deck with no dimension, on the board of the app's own deck: never; the app's own deck always has a dimension and takes no acts.
 - A name refused in a panel, renaming, and the name field drawing 1 shows in the panel: an unsettled decision.
@@ -333,6 +334,7 @@ On the board of a deck of their own, each dimension and each zone holds an ⓘ, 
 - `Board` must keep which thing is open, a card, a dimension or a category of the chosen dimension, in the state it keeps the open card in today, and render `Panel` with the thing's name as its heading while the deck holds the thing. A question open for a thing closes with its panel when the deck no longer holds the thing.
 - Given `acts`, the panel of a card, of a dimension and of a category must hold one `<button type="button">` whose accessible name is "Delete", shown as the bin in the red box drawings 1 and 3 show, at the end of a row of its own under the heading, with the look cycle 009 gave Delete in src/ui/Panel.css. On a screen at most 720px wide Delete is 44px wide and high. Given no acts, a card's panel holds its heading and Close alone.
 - Pressing Delete must show `Question` over the board with "Delete" as `confirm` and, as `question`, `deleteCardQuestion`, `deleteDimensionQuestion` or `deleteCategoryQuestion` of the open thing. Cancel closes the question and leaves the panel open and the deck as it is, and the focus returns to Delete in the panel, as `Question` returns it. Delete calls `deleteCard`, `deleteDimension` or `deleteCategory` of `acts` and closes the question and the panel; the task moves the focus nowhere afterwards (PDR 011).
+- Guidance: the panel of a dimension or of a category, closed by Close or by the Escape key, returns the focus to the ⓘ that opened it, as a card's does through `opener` and `closePanel` in `Board`; `InfoButton` hands `onPress` the pressed ⓘ.
 - The task must dispatch nothing to the board for a deletion: `fitBoard` returns a deleted category's cards to the pool, and leaves no dimension chosen with every card in the pool when the chosen dimension is deleted (ADR 015).
 - docs/vocabulary.md must hold these five rows, each character for character. Each of the first three is added after the last row of its Area, and the other two replace the rows of the ⓘ and of the panel. Each row says only what is built once this task is done:
 
