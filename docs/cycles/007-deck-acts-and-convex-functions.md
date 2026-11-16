@@ -29,7 +29,7 @@ Judgement: The engineer runs `npm test` and reads, in the Debriefs, each act's t
 
 **Status**
 
-- [ ]
+- [x]
 
 **Goal**
 
@@ -173,7 +173,12 @@ export function saveAnswers(
 
 **Debrief**
 
-None.
+- Done when, the tests: `npx vitest run convex/model/deckActs.test.ts --reporter=verbose` lists all 26 named tests with ✓ and ends `Tests  26 passed (26)`. A card, a dimension or a category already bearing the empty name stands in each "in that order" test, so a rename or a making to the empty name shows `noName` coming before `nameTaken`. The test `no act changes the deck, the decks or the arguments it is given` deep-freezes the deck, the decks and every act's arguments, so any write throws, and then compares their JSON before and after.
+- Done when, the typecheck: the `npx tsc --ignoreConfig …` command prints nothing and exits with status 0.
+- The checks run for every commit: `npm test` reports `Test Files  9 passed (9)` and `Tests  93 passed (93)`. `npm run typecheck` exits with status 0.
+- Departure: the file leaves open what `renameDeck` does when `decks` holds no deck of id `args.deck`, since the caller guarantees one. It throws an `Error`, because `Refusal` has no `gone` of kind `deck` and `ActResult` has no other way to say so. Its interface comment states this precondition.
+- Departure: the interface comments of `addCard`, `addDimension` and `addCategory` state, as a precondition, that `args.id` is an id the deck or the dimension does not already hold, because the act takes the id as given.
+- Read: the module's interface comment at the top of convex/model/deckActs.ts, which states the rules every act keeps. Also read `saveAnswers`, whose `changed` flag returns the deck it was given, the same object, when no card's answer changes. T3's mutation relies on that.
 
 ### T2 — Convex tables, owner helper, queries and deck mutations
 
