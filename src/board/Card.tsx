@@ -1,5 +1,6 @@
 import { useDraggable } from "@dnd-kit/core";
 import type { Card as CardModel } from "../../convex/model/deck";
+import InfoButton from "../ui/InfoButton";
 import type { Mark } from "./board";
 import "./Card.css";
 
@@ -61,16 +62,7 @@ export default function Card({ card, mark, disabled, onOpen }: CardProps) {
       {mark && " "}
       {mark && <span aria-hidden="true">{icons[mark]}</span>}
       {mark && <span className="visually-hidden">{words[mark]}</span>}
-      <button
-        type="button"
-        className="card-info"
-        // A press on the ⓘ opens the card and never reaches the card's drag
-        // listeners, so it cannot start a drag.
-        onPointerDown={(event) => event.stopPropagation()}
-        onClick={(event) => onOpen(card.id, event.currentTarget)}
-      >
-        ⓘ
-      </button>
+      <InfoButton onPress={(button) => onOpen(card.id, button)} />
     </div>
   );
 }

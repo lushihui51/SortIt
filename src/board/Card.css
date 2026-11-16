@@ -38,31 +38,6 @@
   background: var(--color-no-answer);
 }
 
-/* The ⓘ sits in the card's upper right corner, in the room its padding
-   leaves; the character draws its own circle. */
-.card-info {
-  position: absolute;
-  top: var(--info-inset);
-  right: var(--info-inset);
-  display: grid;
-  place-items: center;
-  width: var(--info-size);
-  height: var(--info-size);
-  padding: 0;
-  border: 0;
-  border-radius: 50%;
-  background: var(--color-control);
-  color: var(--color-label);
-  font-size: var(--info-font-size);
-  line-height: 1;
-  cursor: pointer;
-}
-
-.card-info:focus-visible {
-  outline: var(--focus-ring-width) solid var(--color-focus);
-  outline-offset: var(--focus-ring-offset);
-}
-
 .card-dragging {
   z-index: var(--layer-dragging);
   cursor: grabbing;

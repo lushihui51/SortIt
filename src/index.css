@@ -23,6 +23,8 @@
   --color-switch-knob: #ffffff;
   --color-scrim: rgb(0 0 0 / 0.25);
   --color-shadow-panel: rgb(0 0 0 / 0.25);
+  /* The colour of an act that deletes. */
+  --color-danger: #a3281a;
 
   /* Sizes */
   --font-size: 1rem;
@@ -79,14 +81,20 @@
   --deck-padding: 1rem;
   /* A deck's padding on the side of its ⓘ, which leaves the ⓘ room. */
   --deck-padding-info: 40px;
+  --deck-info-size: 15px;
+  /* Space between a deck's ⓘ and the deck's border, above it and beside it. */
+  --deck-info-inset: 6px;
+  --deck-info-font-size: 15px;
   --new-field-width: 170px;
 
   /* Layers: the account menu lies over the board's resting cards, a card
-     being dragged passes over every card, region and the menu, and the panel
-     and its scrim lie over everything, a card being dragged included. */
+     being dragged passes over every card, region and the menu, the panel
+     and its scrim lie over everything else, a card being dragged included,
+     and a question and its scrim lie over the panel. */
   --layer-menu: 1;
   --layer-dragging: 2;
   --layer-panel: 3;
+  --layer-question: 4;
 }
 
 *,

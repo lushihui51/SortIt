@@ -24,7 +24,10 @@ const focusable =
  * While it is rendered it takes the focus, moving it to Close when it mounts
  * and keeping Tab and Shift+Tab inside the panel, and Close or the Escape key
  * calls `onClose`; the caller removes the panel and returns the focus where it
- * belongs. A press outside the panel does nothing.
+ * belongs. A press outside the panel does nothing. A key whose default
+ * something has already prevented is left alone, so that a modal over the
+ * panel, as a `Question`, keeps the keyboard and the focus by taking each key
+ * first and preventing its default.
  */
 export default function Panel({
   heading,
@@ -41,6 +44,7 @@ export default function Panel({
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
+      if (event.defaultPrevented) return;
       if (event.key === "Escape") {
         event.preventDefault();
         onClose();

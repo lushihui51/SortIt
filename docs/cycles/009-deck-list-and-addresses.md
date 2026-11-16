@@ -589,7 +589,7 @@ export function refusalWords(
 
 **Status**
 
-- [ ]
+- [x]
 
 **Goal**
 
@@ -701,4 +701,14 @@ export function deleteDeckQuestion(deck: Deck): string;
 
 **Debrief**
 
-None.
+- `npx vitest run src/words/deleteQuestion.test.ts src/ui/Question.test.tsx src/screens/DeckListScreen.test.tsx src/board/Board.test.tsx --reporter=verbose` passed the three tests of src/words/deleteQuestion.test.ts, the two named tests of src/ui/Question.test.tsx and the five new tests of src/screens/DeckListScreen.test.tsx, each by the name the Done when gives. src/ui/Question.test.tsx also holds a test of mine, `over a panel, the Escape key and Tab belong to the question alone`, and src/screens/DeckListScreen.test.tsx one, `the panel and the question of a deck show only while the list holds it`.
+- The same run passed the card's ⓘ tests of src/board/Board.test.tsx, `a card is not a button and holds one button, its ⓘ`, `pressing a card's ⓘ opens a panel ...` and `a pointer press on a card's ⓘ stops at the ⓘ, ...`; `git diff --quiet src/board/Board.test.tsx` exited with status 0.
+- `npm test`: 23 files, 206 tests passed. `npm run typecheck` exited with status 0.
+- `grep -Fx` found each of the three rows of the Details as a line of docs/vocabulary.md: the List row as the table's last row, the ⓘ and panel rows in place of the rows they replace.
+- `npm run build` exited with status 0, and `cmp dist/index.html dist/404.html` printed nothing.
+- `Delete asks the question ...` runs decks of three cards, one card and none. `a deck's ⓘ opens a panel ...` also closes the panel by Close and by Escape and finds the focus on the ⓘ each time. `Cancel closes the question ...` cancels by Cancel and by Escape, and finds the focus on Delete each time. `confirming deletes the deck ...` asserts the one mutation sent, `decks:deleteDeck` with the deck's id.
+- Each of these trial breaks failed the tests named, and passed again once restored: `Panel` acting on a key already handled, `over a panel, ...` and `Cancel closes the question ...`; no focus returned by `Question`, `Question returns the focus ...` and `Cancel closes the question ...`; confirming sending nothing, `confirming deletes the deck ...`; a panel kept for a deck the list no longer holds, `the panel and the question of a deck show only ...`. A guard on `isConnected` before the focus returns broke no test when removed, since a focus on an element no longer in the page does nothing; it is gone.
+- A headless Chromium over a static page of the list's markup with an open panel and question, and the stylesheets of src/index.css, src/ui/InfoButton.css, src/ui/NewField.css, src/ui/Panel.css, src/ui/Question.css and src/screens/DeckListScreen.css, measured at 1440px each deck's ⓘ 15px wide and high, its glyph 15px, 6px inside the deck's border from its top and right; Delete 36px in `#a3281a` for its bin and border; the question in the panel's box and place, at z-index 4 over the panel's 3. At 390px Delete and the question's buttons are 44px high. The ⓘ's glyph and every check signed in, with the deletion through Convex, are the engineer's.
+- The cycle's Judgement: the builder's evidence is the tests this cycle's tasks name, which passed under `npm test` above; every check of the Judgement that needs a browser, a sign-in or Convex is the engineer's.
+- No departure from guidance. Choices of mine: `Question` listens for keys on the document in the capture phase, takes every Tab and the Escape key and prevents their default, and `Panel` leaves a key whose default is prevented alone; the row that holds Delete is `.panel-row` in src/ui/Panel.css, beside `.panel-delete`; `InfoButton`'s rules stand under `:where(.info-button)`, so `.deck-list-info` overrides the size, place and glyph; new custom properties `--color-danger`, `--deck-info-size`, `--deck-info-inset`, `--deck-info-font-size` and `--layer-question`; opening a deck's panel drops a question left open; the deck's ⓘ keeps the card's ⓘ's size on a phone, since no task asks 44px of it.
+- Read `onKeyDown` of `Question` in src/ui/Question.tsx with the first line of `onKeyDown` of `Panel` in src/ui/Panel.tsx: a modal a later cycle lays over a panel keeps the keyboard only by taking keys in the capture phase and preventing their default.

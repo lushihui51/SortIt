@@ -61,13 +61,18 @@ vi.mock("@clerk/react", () => ({
   }),
 }));
 
-function deck(id: string, name: string): Deck {
-  return { id, name, dimensions: [], cards: [] };
+function deck(id: string, name: string, count = 0): Deck {
+  const cards = Array.from({ length: count }, (_, index) => ({
+    id: `${id}-card-${index}`,
+    name: `Card ${index}`,
+    answers: {},
+  }));
+  return { id, name, dimensions: [], cards };
 }
 
 const decks = [
-  deck("3f2b8c1e-9a4d-4e6f-8b21-0c5d7e9fa1b3", "History"),
-  deck("0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d", "Animals"),
+  deck("3f2b8c1e-9a4d-4e6f-8b21-0c5d7e9fa1b3", "History", 3),
+  deck("0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d", "Animals", 1),
   deck("9e8d7c6b-5a4f-4e3d-9c2b-1a0f9e8d7c6b", "Biology revision"),
 ];
 
@@ -244,4 +249,135 @@ test("a refused deck name shows its words under New deck and opens nothing", asy
   expect(convex.sent).toHaveLength(0);
   expect(screen.queryByLabelText("path")).toBeNull();
   expect(screen.getByRole("list")).toBeInTheDocument();
+});
+
+/** The list item of the deck named `name`. */
+function deckItem(name: string) {
+  return screen.getByRole("link", { name }).closest("li")!;
+}
+
+/** The ⓘ of the deck named `name`. */
+function infoOf(name: string) {
+  return within(deckItem(name)).getByRole("button", { name: "ⓘ" });
+}
+
+test("each deck holds an ⓘ beside its link, not inside it", () => {
+  renderList();
+  for (const { name } of decks) {
+    const item = deckItem(name);
+    const link = within(item).getByRole("link");
+    const buttons = within(item).getAllByRole("button");
+    expect(buttons).toHaveLength(1);
+    expect(buttons[0]).toHaveTextContent(/^ⓘ$/);
+    expect(buttons[0]).toHaveAttribute("type", "button");
+    expect(link).not.toContainElement(buttons[0]);
+    expect(buttons[0].parentElement).toBe(item);
+    expect(link.parentElement).toBe(item);
+  }
+});
+
+test("a deck's ⓘ opens a panel headed by the deck's name with Delete", async () => {
+  const user = userEvent.setup();
+  renderList();
+  expect(screen.queryByRole("dialog")).toBeNull();
+  const info = infoOf("Biology revision");
+  await user.click(info);
+
+  const panel = screen.getByRole("dialog", { name: "Biology revision" });
+  expect(
+    within(panel).getByRole("heading", { level: 2, name: "Biology revision" }),
+  ).toBeInTheDocument();
+  const buttons = within(panel).getAllByRole("button");
+  expect(buttons).toEqual([
+    within(panel).getByRole("button", { name: "Close" }),
+    within(panel).getByRole("button", { name: "Delete" }),
+  ]);
+  expect(buttons[1]).toHaveAttribute("type", "button");
+  expect(screen.queryByRole("alertdialog")).toBeNull();
+
+  await user.click(buttons[0]);
+  expect(screen.queryByRole("dialog")).toBeNull();
+  expect(info).toHaveFocus();
+  await user.click(info);
+  await user.keyboard("{Escape}");
+  expect(screen.queryByRole("dialog")).toBeNull();
+  expect(info).toHaveFocus();
+  expect(convex.sent).toHaveLength(0);
+});
+
+test("Delete asks the question that names the deck and its cards", async () => {
+  const user = userEvent.setup();
+  renderList();
+  for (const [name, asked] of [
+    ["History", 'Delete the deck "History"? 3 cards and their answers will be lost.'],
+    ["Animals", 'Delete the deck "Animals"? 1 card and their answers will be lost.'],
+    ["Biology revision", 'Delete the deck "Biology revision"?'],
+  ]) {
+    await user.click(infoOf(name));
+    await user.click(screen.getByRole("button", { name: "Delete" }));
+    const question = screen.getByRole("alertdialog", { name: asked });
+    expect(question).toHaveTextContent(asked);
+    expect(
+      within(question)
+        .getAllByRole("button")
+        .map((button) => button.textContent),
+    ).toEqual(["Delete", "Cancel"]);
+    await user.click(within(question).getByRole("button", { name: "Cancel" }));
+    await user.click(screen.getByRole("button", { name: "Close" }));
+  }
+  expect(convex.sent).toHaveLength(0);
+});
+
+test("Cancel closes the question and keeps the panel and the deck", async () => {
+  const user = userEvent.setup();
+  renderList();
+  await user.click(infoOf("History"));
+  const remove = screen.getByRole("button", { name: "Delete" });
+
+  await user.click(remove);
+  await user.click(screen.getByRole("button", { name: "Cancel" }));
+  expect(screen.queryByRole("alertdialog")).toBeNull();
+  expect(screen.getByRole("dialog", { name: "History" })).toBeInTheDocument();
+  expect(remove).toHaveFocus();
+
+  await user.click(remove);
+  await user.keyboard("{Escape}");
+  expect(screen.queryByRole("alertdialog")).toBeNull();
+  expect(screen.getByRole("dialog", { name: "History" })).toBeInTheDocument();
+  expect(remove).toHaveFocus();
+
+  expect(screen.getByRole("link", { name: "History" })).toBeInTheDocument();
+  expect(convex.sent).toHaveLength(0);
+});
+
+test("confirming deletes the deck and closes the question and the panel", async () => {
+  const user = userEvent.setup();
+  renderList();
+  await user.click(infoOf("Animals"));
+  await user.click(screen.getByRole("button", { name: "Delete" }));
+  const question = screen.getByRole("alertdialog");
+  await user.click(within(question).getByRole("button", { name: "Delete" }));
+
+  expect(convex.sent).toEqual([
+    { name: "decks:deleteDeck", args: { deck: decks[1].id } },
+  ]);
+  expect(screen.queryByRole("alertdialog")).toBeNull();
+  expect(screen.queryByRole("dialog")).toBeNull();
+});
+
+test("the panel and the question of a deck show only while the list holds it", async () => {
+  const user = userEvent.setup();
+  const { rerender } = renderList();
+  await user.click(infoOf("History"));
+  await user.click(screen.getByRole("button", { name: "Delete" }));
+  expect(screen.getByRole("alertdialog")).toBeInTheDocument();
+
+  convex.decks = decks.slice(1);
+  rerender(
+    <MemoryRouter initialEntries={["/decks"]}>
+      <DeckListScreen />
+    </MemoryRouter>,
+  );
+  expect(screen.queryByRole("alertdialog")).toBeNull();
+  expect(screen.queryByRole("dialog")).toBeNull();
 });

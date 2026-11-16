@@ -55,13 +55,43 @@
   height: var(--icon-size);
 }
 
-.panel-close:focus-visible {
+/* A row of its own under the heading, its controls at its end. */
+.panel-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--gap);
+}
+
+/* The bin, in the box of Close, drawn in red. */
+.panel-delete {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: var(--icon-button-size);
+  height: var(--icon-button-size);
+  padding: 0;
+  background: var(--color-control);
+  color: var(--color-danger);
+  border: var(--border-width) solid var(--color-danger);
+  border-radius: var(--card-radius);
+  cursor: pointer;
+}
+
+.panel-delete svg {
+  width: var(--icon-size);
+  height: var(--icon-size);
+}
+
+.panel-close:focus-visible,
+.panel-delete:focus-visible {
   outline: var(--focus-ring-width) solid var(--color-focus);
   outline-offset: var(--focus-ring-offset);
 }
 
 @media (max-width: 720px) {
-  .panel-close {
+  .panel-close,
+  .panel-delete {
     width: var(--hit-size);
     height: var(--hit-size);
   }
