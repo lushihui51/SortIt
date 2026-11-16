@@ -75,6 +75,10 @@
   --account-button-size: 34px;
   /* Space between the bottom of the board's bar and the account menu. */
   --account-menu-offset: 10px;
+  --deck-list-width: 640px;
+  --deck-padding: 1rem;
+  /* A deck's padding on the side of its ⓘ, which leaves the ⓘ room. */
+  --deck-padding-info: 40px;
 
   /* Layers: the account menu lies over the board's resting cards, a card
      being dragged passes over every card, region and the menu, and the panel

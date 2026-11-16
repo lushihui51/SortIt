@@ -1,0 +1,57 @@
+.deck-list-screen {
+  display: flex;
+  flex-direction: column;
+  gap: var(--board-padding);
+  min-height: var(--page-height);
+  padding: var(--board-padding);
+}
+
+/* Positioned, so that the account menu at the end of the bar hangs under it;
+   as tall as the account button while the button is not yet shown, so the
+   list never moves. */
+.deck-list-bar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-height: var(--account-button-size);
+}
+
+.deck-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+  width: 100%;
+  max-width: var(--deck-list-width);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.deck-list-deck {
+  background: var(--color-region);
+  border: var(--region-border-width) solid var(--color-region-border);
+  border-radius: var(--region-radius);
+}
+
+/* Fills the deck's box, so a press anywhere on the deck opens it. */
+.deck-list-link {
+  display: block;
+  padding: var(--deck-padding);
+  padding-inline-end: var(--deck-padding-info);
+  border-radius: inherit;
+  color: inherit;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.deck-list-link:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-focus);
+  outline-offset: var(--focus-ring-offset);
+}
+
+@media (max-width: 720px) {
+  .deck-list-bar {
+    min-height: var(--hit-size);
+  }
+}

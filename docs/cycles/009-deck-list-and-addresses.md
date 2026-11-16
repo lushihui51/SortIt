@@ -214,7 +214,7 @@ export function deleteDeckLocally(
 
 **Status**
 
-- [ ]
+- [x]
 
 **Goal**
 
@@ -332,7 +332,16 @@ export default function DeckListScreen(): ReactElement | null;
 
 **Debrief**
 
-None.
+- `npx vitest run src/routes/SignedInOnly.test.tsx src/screens/DeckListScreen.test.tsx src/account/Account.test.tsx src/routes/AppRoutes.test.tsx --reporter=verbose` passed the five tests of src/routes/SignedInOnly.test.tsx, the three of src/screens/DeckListScreen.test.tsx and the eight new tests of src/account/Account.test.tsx, each by the name the Done when gives, with the twelve tests cycle 008 left in that file under their names, now rendered inside `MemoryRouter`.
+- The same run passed `the path /decks shows the list of decks to a signed-in learner` in src/routes/AppRoutes.test.tsx.
+- `npm test`: 18 files, 163 tests passed. `npm run typecheck` exited with status 0. `npm run build` exited with status 0, and `cmp dist/index.html dist/404.html` printed nothing.
+- `grep -Fx` found each of the two rows of the Details as a line of docs/vocabulary.md; the List row is the table's last row.
+- Each of these trial breaks of the code failed the test named, and passed again once restored: `onSignInClose` called at a close while Clerk reports not loaded, `holds a close while Clerk reports not loaded, ...`; no reset of the open in the observer's cleanup, `under StrictMode ...`; `closeSignIn` before `disconnect`, `unmounting with the form open ...`; the guard's list query always skipped, `keeps the list of decks subscribed ...`; a push at `/` on "Sign out", `Sign out pushes the address / ...`.
+- The test under StrictMode renders `StrictMode` at the root, around `MemoryRouter`, as src/main.tsx has it: React 19.3.1 runs no effect twice on mount under a `StrictMode` nested below the root, which a trial render confirmed.
+- T1's test `any other path is replaced by /` no longer lists `/decks`, now a route; it still lists a deck's address and `/nowhere`. Its mock of `@clerk/react` follows the learner the test sets, signed out unless the test signs them in.
+- No departure from guidance. Choices of mine: the list's bar keeps the account button's height while the button is not shown, so the list never moves; a deck's link carries the drawn padding, 40px on the side of T6's ⓘ, as `--deck-padding-info`; the observer counts a close from the records it is given, so an open and a close delivered in one batch still count as a close.
+- No browser check was run: reaching `/decks` needs a sign-in to Clerk. The form's place over the dimmed board, its close by each of the three ways, and the list's look against drawing 4 are the engineer's to see.
+- Read the three effects of `Account` in src/account/Account.tsx. The cleanup of the observer's effect also resets `openedOnMount`, since it runs between StrictMode's two runs on mount and the form it closed must open again; `signInOpen` opens the form at the first report of a signed-out learner, which is later than mount when `Account` mounts while Clerk loads. Under the guard, `useConvexAuth()` reports loading while Clerk reports not loaded, so after a sign-in at `/decks` the guard unmounts `Account`, which closes the modal through `closeSignIn` if it still stands; the held close's life through not loaded matters where `Account` stays mounted, as at `/`.
 
 ### T4 — A deck's board at its address
 
