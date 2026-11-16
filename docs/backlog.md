@@ -5,6 +5,9 @@ Canvas: https://claude.ai/artifact/6dphuHA8nGiktfiES8z7q4
 - B6 What a deck must satisfy and what the learner sees when it does not: every card has exactly one answer in every dimension, drawn from that dimension's categories, and a deck that breaks this shows a clear error in place of the board.
   - Reason: the requirements assume one category per card per dimension and ask whether more than one is allowed; the error is what the learner sees instead of a broken quiz.
   - Owner: /product-decide
+- B16 How does the learner tell at once whether a thing on a screen is a deck, a dimension, a category or a card?
+  - Reason: decks, dimensions, categories and cards each carry an "ⓘ" and a name, and the learner may not tell at a glance which kind of thing they are about to change or delete.
+  - Owner: /product-decide
 - B17 What does assistive technology speak for the ⓘ on a card, a dimension, a zone and a deck?
   - Reason: every ⓘ shows "ⓘ" alone, so assistive technology speaks the same for each, and a learner who uses it cannot tell which card, dimension, zone or deck an ⓘ opens.
   - Owner: /product-decide
