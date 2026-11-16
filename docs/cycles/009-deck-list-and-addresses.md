@@ -8,9 +8,9 @@ Canvas: https://claude.ai/artifact/AgFMPvjzHiWy4Ypf49DNqb
 
 Outcome: A signed-in learner reaches their list of decks at its own address, makes a deck by "New deck", opens each deck's board at an address of its name and code, deletes a deck from its panel after a question, and finds each board as they left it when they come back to it from the list or by Back and Forward; signed out, either address shows the app's own deck with the sign-in form open, and a deck that cannot be opened brings the list with a line saying so.
 
-Scope: The cycle covers React Router with the three addresses, the copy of index.html to 404.html, the making and reading of a deck's address, the hook that sends an act on the learner's decks with its optimistic update, the guard `SignedInOnly`, the list of decks with its "New deck" field and its refusals, the screen of a learner's deck with the arrow back to the list, the line for a deck that cannot be opened, and the deletion of a deck from its panel after a question. It leaves out the copy of the app's own deck that starts a learner's list, renaming a deck, every act on a card, a dimension or a category, Save answers, and the lines for changes not yet kept or not kept.
+Scope: The cycle covers React Router with the three addresses, the copy of index.html to 404.html, the making and reading of a deck's address, the hook that sends an act on the learner's decks with its optimistic update, the guard `SignedInOnly`, the sign-in form opened by an address with its close observed and reported, the list of decks with its "New deck" field and its refusals, the screen of a learner's deck with the arrow back to the list, the line for a deck that cannot be opened, and the deletion of a deck from its panel after a question. It leaves out the copy of the app's own deck that starts a learner's list, renaming a deck, every act on a card, a dimension or a category, Save answers, and the lines for changes not yet kept or not kept.
 
-Judgement: The engineer runs `npx convex dev` and `npm run dev`, signs in, and presses the arrow on the board of the app's own deck: the list of decks shows at `/decks` with the account button. Typing a name into "New deck" and pressing Enter opens the new deck's empty board at `/decks/<name>-<code>`; a name already used, and an empty name, each show their refusal under the field, which keeps what was typed. The browser's Back returns to the list and Forward to the deck. On the board of the app's own deck the engineer chooses a dimension and places cards, goes to the list by the arrow, comes back by Back, and finds the board as they left it. A deck made in this cycle holds no card, so the engineer reads in T4's Debrief the test that a deck's board keeps its chosen dimension when it is opened again from the list; a reload of a deck's address shows the same deck. The ⓘ of a deck opens its panel, Delete asks the question naming the deck, which for a deck with no card reads `Delete the deck "<Deck>"?`, Cancel keeps the deck and Delete removes it; the question's words for a deck with cards are proven by the tests T6 names. Opening the address of the deleted deck brings the list with the line that the deck cannot be opened, which is gone after a reload. Signed out, `/decks` and a deck's address each show the board of the app's own deck with the sign-in form open and the address unchanged; closing the form ends at `/`, and signing in from the form shows what the address names. "Sign out" on the list of decks brings the board of the app's own deck at `/`, and Back then shows the sign-in form again. After `npm run build`, dist/404.html is a copy of dist/index.html.
+Judgement: The engineer runs `npx convex dev` and `npm run dev`, signs in, and presses the arrow on the board of the app's own deck: the list of decks shows at `/decks` with the account button. Typing a name into "New deck" and pressing Enter opens the new deck's empty board at `/decks/<name>-<code>`; a name already used, and an empty name, each show their refusal under the field, which keeps what was typed. The browser's Back returns to the list and Forward to the deck. On the board of the app's own deck the engineer chooses a dimension and places cards, goes to the list by the arrow, comes back by Back, and finds the board as they left it. A deck made in this cycle holds no card, so the engineer reads in T4's Debrief the test that a deck's board keeps its chosen dimension when it is opened again from the list; a reload of a deck's address shows the same deck. The ⓘ of a deck opens its panel, Delete asks the question naming the deck, which for a deck with no card reads `Delete the deck "<Deck>"?`, Cancel keeps the deck and Delete removes it; the question's words for a deck with cards are proven by the tests T6 names. Opening the address of the deleted deck brings the list with the line that the deck cannot be opened, which is gone after a reload. Signed out, `/decks` and a deck's address each show the board of the app's own deck dimmed, with the sign-in form centred over it and the address unchanged; closing the form, by a press on the dimmed board, by the Escape key and by its cross, each ends at `/`, and signing in from the form shows what the address names and never `/`. "Sign out" on the list of decks brings the board of the app's own deck at `/`, Back then shows the sign-in form again, and Forward then shows the board at `/` with no form over it, usable and scrolling. After `npm run build`, dist/404.html is a copy of dist/index.html.
 
 ## Records
 
@@ -23,7 +23,7 @@ Judgement: The engineer runs `npx convex dev` and `npm run dev`, signs in, and p
 - PDR 014: Changes shown at once and kept when the connection returns, with a change that no longer fits named and left out
 - PDR 015: An address for the list and each deck, opening sign-in or the list when the deck cannot be opened
 - ADR 007: One deck shape keyed by ids made on the device, with the app's own deck bundled as JSON keyed by name
-- ADR 008: Clerk for signing the learner in, with its sign-in component in a popover of the app's own
+- ADR 008: Clerk for signing the learner in, with its own modal as the sign-in form
 - ADR 009: Convex for keeping the learners' decks, with one helper checking each deck's owner
 - ADR 011: One Convex document per deck, changed by one pure act run on the device and in the mutation
 - ADR 012: Late changes refused as the mutation's value, Save answers kept in part, and one hook naming what was not kept
@@ -32,6 +32,7 @@ Judgement: The engineer runs `npx convex dev` and `npm run dev`, signs in, and p
 - ADR 016: The board as a view of a deck, its board and its acts, with Convex and Clerk kept out of it
 - ADR 017: React Router for the addresses, with the list and each deck behind one guard waiting on Convex
 - ADR 018: Vitest in four kinds, unit, component in jsdom, Convex functions under convex-test and the record citation guard, with dragging checked by hand
+- ADR 019: The close of Clerk's modal observed through a container of the app's own, and reported only once Clerk reports the learner signed out
 
 ## Tasks
 
@@ -229,7 +230,7 @@ At `/decks` a signed-in learner sees their decks listed by name, each a link to 
 
 **Details**
 
-- The task must create or change these interfaces (ADR 017):
+- The task must create or change these interfaces (ADR 017, ADR 019):
 
 ```tsx
 // src/routes/SignedInOnly.tsx
@@ -238,9 +239,9 @@ export default function SignedInOnly(): ReactElement | null;
 
 // src/account/Account.tsx
 export type AccountProps = {
-  /** Shows the sign-in form open when `Account` first shows a learner who is not signed in. */
+  /** Opens the sign-in form, with no press, when `Account` first shows a learner who is not signed in. */
   signInOpen?: boolean;
-  /** Called when the learner closes the sign-in form, not when it closes because they signed in. */
+  /** Called once the learner has closed the sign-in form without signing in, never when it closes because they signed in. */
   onSignInClose?: () => void;
 };
 export default function Account(props: AccountProps): ReactElement | null;
@@ -255,15 +256,22 @@ export default function DeckListScreen(): ReactElement | null;
 ```
 
 - `AppRoutes` must show `DeckListScreen` at `/decks`, as a route inside `SignedInOnly`.
-- `SignedInOnly` must read `useConvexAuth()` of `convex/react` and nothing of Clerk. While it reports loading, the guard renders nothing. While the learner is not authenticated, it renders `AppDeckScreen` with `signInOpen` and leaves the address as it is, and it replaces the address with `/` when `onSignInClose` is called. Once the learner is authenticated, it renders the route's screen (ADR 017).
-- The sign-in form opened by the guard must be the same form, in the same place, as the one "Sign in" opens.
+- `SignedInOnly` must read `useConvexAuth()` of `convex/react` and nothing of Clerk. While it reports loading, the guard renders nothing. While the learner is not authenticated, it renders `AppDeckScreen` with `signInOpen` and leaves the address as it is, and it replaces the address with `/` when `onSignInClose` is called. Once the learner is authenticated, it renders the route's screen (ADR 017). `onSignInClose` means, to the guard, that the learner closed the form without signing in: the guard reads nothing of Clerk to tell a close from a sign-in (ADR 019).
+- The sign-in form the guard opens must be the form "Sign in" opens: Clerk's own modal, opened by `Account` through the same call of `openSignIn` with what cycle 008 gives it, centred over the dimmed board of the app's own deck as drawing 7 shows, with the address left as it is through every step of signing in or of making an account (ADR 008, ADR 017).
+- Given `signInOpen`, `Account` must make that call with no press, in the effect that runs when it first shows a learner whom Clerk's `useAuth()` reports loaded and signed out: once for each run of that effect on mount, and never again while it stays mounted.
+- Every call of `openSignIn`, the one a press on "Sign in" makes included, must give the modal, as `getContainer`, one element of `Account`'s own, which `Account` renders into `document.body` through React's `createPortal` for as long as it is mounted, whatever Clerk reports and whether or not it shows a button. The task writes no CSS for the element and never renders it inside a bar (ADR 019).
+- `Account` must learn that the modal has closed only from a `MutationObserver` on that element: a close is the element emptied after it held the modal (ADR 019).
+- `Account` must keep an observed close as state and call `onSignInClose` only once `useAuth()` reports loaded and signed out while a close is held, once for that close. A report of signed in must drop the held close with `onSignInClose` not called, and the held close must outlast every moment `useAuth()` reports not loaded (ADR 019).
+- When `Account` unmounts with the modal open, it must first stop observing the element and then close the modal through `closeSignIn` of `useClerk()`, so that this close never reaches `onSignInClose`. `Account` takes the modal as open from its own call of `openSignIn` until it observes a close. Unmounting with no modal open calls nothing of Clerk.
+- The app runs under React's StrictMode in development, in src/main.tsx, which runs each effect twice on mount: the effect opens the form, its cleanup closes it as an unmount does, and the effect opens it again, so `openSignIn` is called twice there with `closeSignIn` between. Clerk takes the three in the order called. After a load of `/decks` or of a deck's address by a learner who is not signed in, the form must stand open, with the address unchanged and `onSignInClose` not called; the test under StrictMode asserts that and counts no call.
 - "Sign out" in `Account` must now push the address `/` through React Router and then sign the learner out, handing Clerk `/` as the address to go to afterwards, so that the browser's Back reaches the address the learner signed out from and no sign-in form shows in between (PDR 015). At `/` it pushes nothing.
-- The tests cycle 008 left in src/account/Account.test.tsx must keep their names and what they assert, now rendered inside `MemoryRouter`. The test `Sign out signs the learner out through Clerk` asserts only that Clerk's sign-out is called; the address handed to Clerk is the new test's to assert.
+- The tests cycle 008 left in src/account/Account.test.tsx must keep their names and what they assert, now rendered inside `MemoryRouter`. The test `Sign out signs the learner out through Clerk` asserts only that Clerk's sign-out is called; the address handed to Clerk is the new test's to assert. The test `pressing Sign in opens Clerk's sign-in form through openSignIn` now meets a call that also carries `getContainer`.
 - `SignedInOnly` must keep `useQuery(api.decks.list)` subscribed for as long as it renders a route for an authenticated learner, so that the list's value outlives a move from one route inside it to another.
-- `DeckListScreen` must read `useQuery(api.decks.list)`, render nothing while it is loading, and otherwise show a bar holding `Account` at its end, which is the element the sign-in form and the account menu are placed against as the board's bar is, made their positioned ancestor by src/screens/DeckListScreen.css (`position: relative`) as cycle 008 has src/board/Board.css make the board's bar, so that each hangs 10px below the list's bar with its right edge at the screen's right padding, and, under it, a list of the decks in the query's order, each a list item drawn as the deck's box and holding one link to `deckAddress` of the deck, which shows the deck's name, fills the whole box, and shows the focus outline every other control shows when the keyboard focuses it.
+- `DeckListScreen` must read `useQuery(api.decks.list)`, render nothing while it is loading, and otherwise show a bar holding `Account` at its end, which is the element the account menu is placed against as the board's bar is, made its positioned ancestor by src/screens/DeckListScreen.css (`position: relative`) as cycle 008 has src/board/Board.css make the board's bar, so that the menu hangs 10px below the list's bar with its right edge at the screen's right padding, and, under it, a list of the decks in the query's order, each a list item drawn as the deck's box and holding one link to `deckAddress` of the deck, which shows the deck's name, fills the whole box, and shows the focus outline every other control shows when the keyboard focuses it.
 - Each new size and colour of this task is a custom property in src/index.css, and a size an existing property already holds, as the 12px of `--board-padding`, takes that property.
 - The list must look as drawing 4 shows it: the bar, the list's width, the gap between the decks, and each deck's box, padding and weight of name, and the 12px between the bar and the list. On a screen narrower than the drawn list, the list takes the screen's width less the board's padding on each side.
 - src/screens/DeckListScreen.test.tsx and src/routes/SignedInOnly.test.tsx must mock `convex/react` and `@clerk/react` and render inside `MemoryRouter`. src/routes/SignedInOnly.test.tsx also renders inside `BoardsProvider`, since the guard shows `AppDeckScreen`. src/routes/AppRoutes.test.tsx now mocks `convex/react` too, for every test in it.
+- In src/account/Account.test.tsx and src/routes/SignedInOnly.test.tsx the mock of `@clerk/react` must stand in for the modal: its `openSignIn` appends one element to the element the `getContainer` it is given returns, and its `closeSignIn` removes that element. A test closes the form as the learner does by removing that element, and sets what the mock of `useAuth` reports, signed out, not loaded or signed in, in the order its name gives (ADR 019).
 - docs/vocabulary.md must hold these two rows, each character for character. The first is added, and the second replaces the row of the account button:
 
 ```
@@ -278,10 +286,13 @@ export default function DeckListScreen(): ReactElement | null;
 - The ⓘ on each deck, the scrim and the panel that drawing 4 shows: T6, and the panel's name field an unsettled decision.
 - The "New deck" field that drawing 4 shows: T5.
 - The route of a deck's address: T4. Until T4, a deck's link leads to a path `AppRoutes` replaces with `/`.
-- A deck the app gives a new learner: an unsettled decision. A learner with no deck sees an empty list.
+- The copy of the app's own deck that starts a new learner's list: a later cycle, and the copy's name an unsettled decision. A learner with no deck sees an empty list.
 - Clerk's `useAuth`, `SignedIn` or `SignedOut` in the guard, a redirect to `/` carrying the address to return to, or Clerk's own redirect to sign in: never (ADR 017).
-- The cross and the box that drawing 7 draws on the sign-in form: the cross an unsettled decision, the box never.
-- What cycle 008 ruled out of drawing 7 stays out: the blue ring around "Sign in", the dialog's name "Sign in to Sort It", the inside of the form, and the italic letter i in a bordered circle.
+- The form as drawing 7 draws it, its box, its cross, its heading, its fields, its buttons and its foot, and the dimming of the board behind it: never; Clerk's modal renders each (ADR 008). Words of the app's own on the cross: an unsettled decision.
+- A `MutationObserver` on `document.body`, any of Clerk's class names, Clerk's `__internal_addNavigationListener`, a timer that looks for the modal, a fixed wait after a close, or Clerk's `session` read when the observer fires: never (ADR 019).
+- `Account` reporting every close for the guard to sort, or `stayOnPage` marking a sign-in: never (ADR 019).
+- The modal's opening and its container held in one provider above the routes, to keep the form open through Back and Forward: never.
+- What cycle 006 ruled out of drawing 7 stays out: the italic letter i in a bordered circle that it draws for the ⓘ.
 
 **Done when**
 
@@ -296,8 +307,13 @@ export default function DeckListScreen(): ReactElement | null;
   - `shows each deck by its name, in the query's order, as a link to its address`
   - `shows the account button and no deck for a learner with no deck`
 - These tests in src/account/Account.test.tsx pass:
-  - `shows the sign-in form open from the start when signInOpen is given`
-  - `calls onSignInClose when the learner closes the form by pressing Sign in`
+  - `opens the sign-in form with no press when signInOpen is given and the learner is signed out`
+  - `gives every call of openSignIn one container of its own in document.body`
+  - `calls onSignInClose once when the form closes while Clerk reports the learner signed out`
+  - `holds a close while Clerk reports not loaded, drops it when Clerk reports signed in, and calls onSignInClose when Clerk reports signed out`
+  - `unmounting with the form open stops observing, closes the form through closeSignIn and does not call onSignInClose`
+  - `unmounting with no form open calls nothing of Clerk`
+  - `under StrictMode the form signInOpen opens stays open and onSignInClose is not called`
   - `Sign out pushes the address / and signs the learner out, and pushes nothing at /`
 - The test `the path /decks shows the list of decks to a signed-in learner` in src/routes/AppRoutes.test.tsx passes.
 - Every other test passes under `npm test`.
@@ -475,7 +491,7 @@ export function refusalWords(
 ```
 
 - `NewField` must render one `<input type="text">` with `label` as its placeholder and its accessible name. On Enter it must call `onEnter` with the field's text, an empty text included. When `onEnter` gives null, the field empties and keeps the focus. When it gives words, they show as a line under the field, the field keeps what the learner typed, and the line stays until the field's text changes or an Enter is taken up (PDR 009, PDR 011).
-- `NewField` must render one wrapper element holding the `<input>` and the line. The line must be a paragraph with `role="alert"`, in the small font size and the label colour, tied to the field through `aria-describedby`, and laid over what stands under the field, so that nothing on the screen moves when it shows. It must have the page's background colour behind its whole box and lie above resting cards and under a dragged card, by the z-index custom property cycle 008 gave the sign-in form in src/index.css, so that it can be read over whatever stands under it.
+- `NewField` must render one wrapper element holding the `<input>` and the line. The line must be a paragraph with `role="alert"`, in the small font size and the label colour, tied to the field through `aria-describedby`, and laid over what stands under the field, so that nothing on the screen moves when it shows. It must have the page's background colour behind its whole box and lie above resting cards and under a dragged card, by the z-index custom property cycle 008 gave the account menu in src/index.css, so that it can be read over whatever stands under it.
 - Guidance: the line starts at the field's start, directly under the field, may be wider than the field, and wraps where it would pass the screen's edge.
 - Guidance: the wrapper is a `<div>` with `position: relative` and no width or display of its own, so it is as wide as its field where it stands in a row, as in a bar or in the pool, and as wide as the list where it stands in a column, which lets a caller's width of 100% fill the list.
 - On a screen at most 720px wide every `NewField` is at least 44px high.
@@ -488,7 +504,7 @@ export function refusalWords(
   - a category: `The dimension "<Dimension>" already has a category called "<Category>".` and `A category needs a name.`
 - Every caller gives `held` for a card, a dimension or a category. Called without it for one of them, `refusalWords` puts nothing between the first pair of quotes.
 - This cycle shows only a deck's words; the others are shown, and take their rows of docs/vocabulary.md, in a later cycle.
-- `DeckListScreen` must show `NewField` labelled "New deck" after the list's `<ul>`, never as an item of it, in the box drawing 4 shows, with the gap between two decks above it. Its `onEnter` must call `createDeck` of `useDeckActs`, give the words of `refusalWords` when the act refuses with `nameTaken` or `noName`, which are the only refusals `createDeck` gives, give null and push nothing for any other refusal, and, when the act does not refuse, push the address `deckAddress` of the new deck and give null (PDR 011).
+- `DeckListScreen` must show `NewField` labelled "New deck" after the list's `<ul>`, never as an item of it, in the box drawing 4 shows, with the gap between two decks above it. `DeckListScreen` must hold the `<ul>` and the field in one column of the list's width, as drawing 4's list holds the decks and the field, so that the field's full width is the list's. Its `onEnter` must call `createDeck` of `useDeckActs`, give the words of `refusalWords` when the act refuses with `nameTaken` or `noName`, which are the only refusals `createDeck` gives, give null and push nothing for any other refusal, and, when the act does not refuse, push the address `deckAddress` of the new deck and give null (PDR 011).
 - docs/vocabulary.md must hold these two rows, each character for character, each added after the last row of its Area:
 
 ```
@@ -503,7 +519,7 @@ export function refusalWords(
 - A button that turns into the field, or a "+" inside it: never.
 - Showing the words for a card, a dimension or a category name refused: a later cycle.
 - The 2px offset drawing 6 gives the outline of the field in use: never; the field takes the app's own focus outline.
-- A refusal shown while the learner types, before Enter: never; the act that refuses is applied when Enter is pressed (PDR 011, ADR 011).
+- A refusal shown while the learner types, before Enter: never; the act that refuses is applied when Enter is pressed.
 
 **Done when**
 
@@ -575,7 +591,8 @@ Each deck in the list holds an ⓘ that opens the deck's panel, and Delete in th
 // src/ui/InfoButton.tsx
 /** The ⓘ: one button whose text is the character ⓘ, which stops a pointer press from reaching what it sits on. */
 export default function InfoButton(props: {
-  onPress: () => void;
+  /** Called with the pressed ⓘ, which takes the focus back when what it opened closes. */
+  onPress: (button: HTMLElement) => void;
   className?: string;
 }): ReactElement;
 
@@ -599,12 +616,14 @@ export function deleteDeckQuestion(deck: Deck): string;
 - `InfoButton` must be the ⓘ `Card` holds today, moved: the same element, text, look, focus outline and stopping of the pointer press. `Card` must render `InfoButton` in place of its own button, and every test of the card's ⓘ keeps passing unchanged.
 - `DeckListScreen` must render one `InfoButton` for each deck, inside the deck's list item, beside the deck's link in the markup and never inside it, with the look of the card's ⓘ but in a box 15px wide and high, placed by `top: 6px` and `right: 6px` inside the deck's box as drawing 4 shows, its glyph sized to fill that box.
 - Pressing a deck's ⓘ must open `Panel` with the deck's name as its heading, holding one `<button type="button">` whose accessible name is "Delete", shown as the bin in the red box drawing 4 shows, at the end of a row of its own under the heading, where drawing 4 shows it. On a screen at most 720px wide Delete is 44px wide and high. The look of Delete lives in src/ui/Panel.css under a class of its own, for every panel that holds a Delete.
+- Guidance: when the deck's panel closes by Close or by the Escape key, `DeckListScreen` returns the focus to the ⓘ that opened it, as `closePanel` of `Board` in src/board/Board.tsx does for a card's panel.
 - Each new size and colour of this task, the deck's ⓘ's among them, is a custom property in src/index.css.
 - The panel and the question of a deck must show only while the list holds that deck.
 - Pressing Delete must show `Question` over the list with `deleteDeckQuestion` of the deck as `question` and "Delete" as `confirm`. Cancel closes the question and leaves the panel open and the deck as it is. Delete calls `deleteDeck` of `useDeckActs` with the deck's id and closes the question and the panel (PDR 011).
 - `deleteDeckQuestion` must give `Delete the deck "<Deck>"? N cards and their answers will be lost.` with the count of the deck's cards in place of N, `Delete the deck "<Deck>"? 1 card and their answers will be lost.` for a deck of one card, and `Delete the deck "<Deck>"?` for a deck with no card.
 - `Question` must render a scrim fixed to the viewport and, above it and above any panel, an element with `role="alertdialog"` and `aria-modal="true"` named by the question's text through `aria-labelledby`, holding the question and two `<button type="button">`, the first reading `confirm` and the second "Cancel". A press on the scrim does nothing. While a question is open over a panel, the Escape key and the focus belong to the question alone: the panel under it neither closes nor takes the focus, and the task changes `Panel` as far as that needs.
-- Guidance: `Question` takes the scrim, the box and the place of `Panel`, with its two buttons at the end of the box in the look of the bar's buttons, given by a class of its own in src/ui/Question.css that takes the same custom properties as `.board-action` in src/board/Board.css and, as that class is there, is at least 44px high on a screen at most 720px wide. The Escape key cancels, and focus moves to Cancel when the question opens. When it closes, `Question` itself returns the focus to the element that had it when the question opened, where that element still stands: after Cancel that is Delete, and after a deck is deleted, its panel gone, the focus moves nowhere.
+- Guidance: `Question` takes the scrim, the box and the place of `Panel`, with its two buttons at the end of the box in the look of the bar's buttons, given by a class of its own in src/ui/Question.css that takes the same custom properties as `.board-action` in src/board/Board.css and, as that class is there, is at least 44px high on a screen at most 720px wide. The Escape key cancels, and focus moves to Cancel when the question opens.
+- When it closes, `Question` itself must return the focus to the element that had it when the question opened, where that element still stands: after Cancel that is Delete, and after a deck is deleted, its panel gone, the focus moves nowhere.
 - src/ui/Question.test.tsx and the tests of this task in src/screens/DeckListScreen.test.tsx assert what shows and what is called; the hook is mocked with `convex/react`.
 - The checks of the cycle's Judgement that need a browser, a second device or the engineer's accounts are the engineer's. The builder's evidence for the Judgement is the tests this cycle names, and its Debrief says so.
 - docs/vocabulary.md must hold these three rows, each character for character. The first is added after the last row of its Area, and the other two replace the rows of the ⓘ and of the panel. Each row says only what is built once this task is done:
@@ -630,7 +649,9 @@ export function deleteDeckQuestion(deck: Deck): string;
   - `a deck of several cards reads: Delete the deck "<Deck>"? N cards and their answers will be lost.`
   - `a deck of one card reads: Delete the deck "<Deck>"? 1 card and their answers will be lost.`
   - `a deck with no card reads: Delete the deck "<Deck>"?`
-- The test `Question shows its question with the confirming word and Cancel, and calls onConfirm and onCancel` in src/ui/Question.test.tsx passes.
+- These tests in src/ui/Question.test.tsx pass:
+  - `Question shows its question with the confirming word and Cancel, and calls onConfirm and onCancel`
+  - `Question returns the focus, when it closes, to the element that had it when it opened`
 - These tests in src/screens/DeckListScreen.test.tsx pass:
   - `each deck holds an ⓘ beside its link, not inside it`
   - `a deck's ⓘ opens a panel headed by the deck's name with Delete`
