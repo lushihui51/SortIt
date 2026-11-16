@@ -79,6 +79,7 @@
   --deck-padding: 1rem;
   /* A deck's padding on the side of its ⓘ, which leaves the ⓘ room. */
   --deck-padding-info: 40px;
+  --new-field-width: 170px;
 
   /* Layers: the account menu lies over the board's resting cards, a card
      being dragged passes over every card, region and the menu, and the panel

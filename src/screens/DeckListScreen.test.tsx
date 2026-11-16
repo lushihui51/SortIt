@@ -1,29 +1,46 @@
 import "@testing-library/jest-dom/vitest";
 import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { Link, MemoryRouter, Route, Routes } from "react-router";
+import {
+  Link,
+  MemoryRouter,
+  Route,
+  Routes,
+  useLocation,
+  useNavigationType,
+} from "react-router";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import type { Deck } from "../../convex/model/deck";
 import { deckAddress } from "../routes/deckAddress";
 import DeckListScreen from "./DeckListScreen";
 import { DeckNotOpenedProvider, useDeckNotOpened } from "./DeckNotOpened";
 
-// No test reaches Convex: each sets the decks the list query gives.
-const convex = vi.hoisted(() => ({ decks: undefined as Deck[] | undefined }));
+// No test reaches Convex: each sets the decks the list query gives, and reads
+// what was sent, each mutation's function name with its arguments.
+const convex = vi.hoisted(() => ({
+  decks: undefined as Deck[] | undefined,
+  sent: [] as { name: string; args: unknown }[],
+}));
 
 vi.mock("convex/react", async () => {
   const { getFunctionName } = await import("convex/server");
-  const mutation = () =>
-    Object.assign(() => Promise.resolve(null), {
-      withOptimisticUpdate() {
-        return mutation();
+  const mutation = (name: string) =>
+    Object.assign(
+      (args: unknown) => {
+        convex.sent.push({ name, args });
+        return Promise.resolve(null);
       },
-    });
+      {
+        withOptimisticUpdate() {
+          return mutation(name);
+        },
+      },
+    );
   return {
     useConvexAuth: () => ({ isLoading: false, isAuthenticated: true }),
     useQuery: (query: never) =>
       getFunctionName(query) === "decks:list" ? convex.decks : undefined,
-    useMutation: () => mutation(),
+    useMutation: (fn: never) => mutation(getFunctionName(fn)),
   };
 });
 
@@ -56,6 +73,7 @@ const decks = [
 
 beforeEach(() => {
   convex.decks = decks;
+  convex.sent = [];
 });
 
 afterEach(cleanup);
@@ -154,4 +172,76 @@ test("the line is gone when the learner comes back to the list after opening a d
   await user.click(screen.getByRole("link", { name: "A deck's screen" }));
   expect(screen.getByRole("link", { name: "History" })).toBeInTheDocument();
   expect(screen.queryByRole("status")).toBeNull();
+});
+
+/** A stand-in for a deck's screen, showing the address it was reached at and how. */
+function DeckReached() {
+  return (
+    <>
+      <output aria-label="path">{decodeURI(useLocation().pathname)}</output>
+      <output aria-label="navigation">{useNavigationType()}</output>
+    </>
+  );
+}
+
+/** The list at `/decks` and the stand-in for a deck's screen at each deck's address. */
+function renderListRoutes() {
+  return render(
+    <MemoryRouter initialEntries={["/decks"]}>
+      <Routes>
+        <Route path="/decks" element={<DeckListScreen />} />
+        <Route path="/decks/:segment" element={<DeckReached />} />
+      </Routes>
+    </MemoryRouter>,
+  );
+}
+
+function newDeck() {
+  return screen.getByRole("textbox", { name: "New deck" });
+}
+
+test("the New deck field stands after the list and is no item of it", () => {
+  renderList();
+  const list = screen.getByRole("list");
+  expect(within(list).queryByRole("textbox")).toBeNull();
+  expect(newDeck()).toHaveAttribute("placeholder", "New deck");
+  expect(list.nextElementSibling).toContainElement(newDeck());
+  expect(list.parentElement).toContainElement(newDeck());
+});
+
+test("Enter in New deck makes a deck and opens its address", async () => {
+  const user = userEvent.setup();
+  renderListRoutes();
+
+  await user.type(newDeck(), "  Geography {Enter}");
+
+  expect(convex.sent).toHaveLength(1);
+  const [{ name, args }] = convex.sent;
+  expect(name).toBe("decks:createDeck");
+  expect(args).toEqual({ id: expect.any(String), name: "  Geography " });
+  const { id } = args as { id: string };
+  expect(screen.getByLabelText("path")).toHaveTextContent(
+    deckAddress({ id, name: "Geography" }),
+  );
+  expect(screen.getByLabelText("navigation")).toHaveTextContent("PUSH");
+});
+
+test("a refused deck name shows its words under New deck and opens nothing", async () => {
+  const user = userEvent.setup();
+  renderListRoutes();
+
+  await user.type(newDeck(), "History{Enter}");
+  const taken = screen.getByRole("alert");
+  expect(taken).toHaveTextContent(/^You already have a deck called "History"\.$/);
+  expect(newDeck()).toHaveAccessibleDescription(taken.textContent ?? "");
+  expect(newDeck()).toHaveValue("History");
+
+  await user.clear(newDeck());
+  await user.type(newDeck(), "   {Enter}");
+  expect(screen.getByRole("alert")).toHaveTextContent(/^A deck needs a name\.$/);
+  expect(newDeck()).toHaveValue("   ");
+
+  expect(convex.sent).toHaveLength(0);
+  expect(screen.queryByLabelText("path")).toBeNull();
+  expect(screen.getByRole("list")).toBeInTheDocument();
 });

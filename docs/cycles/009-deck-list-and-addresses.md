@@ -464,7 +464,7 @@ back?: ReactNode;
 
 **Status**
 
-- [ ]
+- [x]
 
 **Goal**
 
@@ -575,7 +575,15 @@ export function refusalWords(
 
 **Debrief**
 
-None.
+- `npx vitest run src/ui/NewField.test.tsx src/words src/screens/DeckListScreen.test.tsx --reporter=verbose` passed the five tests of src/ui/NewField.test.tsx, the eight of src/words/refusalWords.test.ts and the three new tests of src/screens/DeckListScreen.test.tsx, each by the name the Done when gives. src/ui/NewField.test.tsx also holds two tests of mine, `adds the caller's class to the field's own` and `the refusal goes when an Enter is taken up`.
+- `npm test`: 21 files, 194 tests passed. `npm run typecheck` exited with status 0. `npm run build` exited with status 0, and `cmp dist/index.html dist/404.html` printed nothing.
+- `grep -Fx` found each of the two rows of the Details as a line of docs/vocabulary.md, the Editing row after the panel's and the List row as the table's last row.
+- The test `Enter in New deck makes a deck and opens its address` types `"  Geography "` and asserts the one mutation sent, `decks:createDeck` with the name as typed, and the address `deckAddress` of the trimmed name reached by a PUSH. The test `a refused deck name shows its words under New deck ...` runs a name taken and a name of spaces, and asserts the words, the field's description, the text kept and no mutation sent.
+- Each of these trial breaks of the code failed the test named, and passed again once restored: a replace in place of the push, `Enter in New deck makes a deck ...`; null in place of the refusal's words, `a refused deck name ...`; the line kept when the text changes, `the refusal goes when the text changes`; the field emptied on a refusal, `a refusal shows under the field ...`; the line kept after an Enter taken up, `the refusal goes when an Enter is taken up`.
+- Departure from guidance: the field's wrapper is a `<div>` with no class and no rule, not `position: relative`. With the wrapper positioned, the line's box could be no wider than the field without measuring the screen in script; unpositioned, the line keeps its place in the flow, directly under the field at its start, and wraps at the edge of the nearest positioned ancestor, less the board's padding. On the list that is the screen; on the board the one positioned ancestor a field would have is the bar, which spans the screen, and no region is positioned.
+- A headless Chromium over a static page of the list's markup with src/index.css, src/ui/NewField.css and src/screens/DeckListScreen.css measured, at 1440px, "New deck" 640px wide and 56px high with its dashed 2px border in the region border's colour, radius 8px and padding 16px, and the refusal line directly under it at its start, 730px wide for a long name; at 390px, the line wrapping 12px from the screen's edge, under "New deck" and under a 170px field in a positioned bar alike, with no sideways scroll, and the 170px field 44px high. No check signed in was run: the field's look against drawing 4, its focus, and the move to the new deck's board are the engineer's.
+- Choices of mine: an Enter that ends the composing of a character, as in Japanese or Chinese input, calls nothing; the field's own rules stand under `:where(.new-field)`, so a caller's single class overrides them wherever its stylesheet loads, while `.new-field:focus` outweighs that class so the focus colour wins over a caller's border colour; drawing 6's field width is `--new-field-width`, the one new custom property.
+- Read `.new-field-refusal` in src/ui/NewField.css: a later cycle that positions a zone or the pool, or places a field inside a positioned card, makes the line wrap at that element's edge, not the screen's.
 
 ### T6 — Deleting a deck from its panel after a question
 

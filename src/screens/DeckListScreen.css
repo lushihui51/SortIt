@@ -17,7 +17,7 @@
   min-height: var(--account-button-size);
 }
 
-/* The line and the list, one column of the list's width. */
+/* The line, the list and "New deck", one column of the list's width. */
 .deck-list-column {
   display: flex;
   flex-direction: column;
@@ -55,6 +55,15 @@
   color: inherit;
   font-weight: 600;
   text-decoration: none;
+}
+
+/* "New deck" in the box of a deck, dashed, across the list's full width. */
+.deck-list-new {
+  width: 100%;
+  padding: var(--deck-padding);
+  border-width: var(--region-border-width);
+  border-color: var(--color-region-border);
+  border-radius: var(--region-radius);
 }
 
 .deck-list-link:focus-visible {
