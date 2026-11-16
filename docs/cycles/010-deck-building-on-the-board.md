@@ -323,7 +323,7 @@ acts?: BoardActs;
 
 **Status**
 
-- [ ]
+- [x]
 
 **Goal**
 
@@ -391,7 +391,16 @@ On the board of a deck of their own, each dimension and each zone holds an ⓘ, 
 
 **Debrief**
 
-None.
+- `npx vitest run src/board/Board.test.tsx --reporter=verbose` shows ✓ for all eight tests of src/board/Board.test.tsx named in Done when. The no-acts test runs `numbered` with Habitat chosen and the app's own deck with Check on. It finds no ⓘ in the picker or in any zone's label and no ⓘ beyond one per card, and a card's panel whose only button is Close. The category test runs `partial` under Habitat, where Forest has 2 cards ("2 cards' answers"), and `numbered` under Diet, where Carnivore has 1 ("1 card's answer"), and asserts `deleteCategory` is called with "habitat" and "dimension-2". The dimension test opens Diet while Habitat is chosen, so it asserts the id of the dimension whose ⓘ was pressed, not the chosen one. The Cancel test runs a card, a dimension and a category, and checks that Delete in the panel holds the focus afterwards. The panel test re-renders the board over a deck without Shark, without Diet, without Ocean, and without Habitat while one of Habitat's zones is open. The first, third and fourth have the question open, and each closes the panel and the question. Every test asserts that no act but the confirmed one was called and that nothing was dispatched.
+- Breaking the code made the matching test fail, and each passed again once the code was restored: Delete shown without acts, confirming that leaves the panel open, `deleteCategory` given the deck's first dimension in place of the chosen one, and a panel kept for a thing the deck no longer holds.
+- `npm test`: 24 test files passed, 240 tests passed. `npm run typecheck` exits with status 0.
+- A Python check that reads the five rows from the Details of this task finds each as a whole line of docs/vocabulary.md, and prints `5 True`.
+- I changed one assertion of the T3 test `given acts, New card ends the pool, New dimension ends the picker and New category follows the zones only while a dimension is chosen`. The element before New dimension is now the wrapper holding Diet's button and its ⓘ, so the test asserts that this element contains the button. Before, it asserted that the element was the button. Its name is unchanged.
+- I checked the look against drawing 3 in a scratch Vite page outside the repository, which rendered `Board` with fake acts in headless Chromium at 1440×900 and at 390px wide. In the browser, a dimension's wrapper is exactly its button's size and the button has 24px right padding. The ⓘ is 13px and stands 4px from the button's outer edge at the top and right, 3px inside its 1px border. A zone's ⓘ stands 6px after the name. Delete is 36px at 1440px wide and 44px at 390px. The live app with sign-in was not run; that is the engineer's check.
+- A finding for the engineer, outside this task's Files: on this machine the ⓘ character comes from Adwaita Mono, which draws it as a pill taller than the 13px white circle `InfoButton` gives it, and lower. On a card or an unpressed dimension this does not show. On the chosen dimension, whose button is dark, the lower half of the pill disappears against the button and the ⓘ reads as a white arch. The look of the ⓘ is src/ui/InfoButton.css, from cycle 009, so I left it as it is.
+- No departure from guidance. The panel of a dimension or a category returns the focus to its ⓘ on Close and on Escape, through `opener` and `closePanel`, as the guidance says.
+- Choices the Details leave to the builder: the ⓘ reaches `DimensionPicker` as the prop `onOpen` and `Zone` as `onOpenCategory`, each shown only when given, so neither reads `acts`. Each dimension's button stands in its wrapper `picker-item`, with or without acts, and takes the class `picker-dimension-info` for its padding only when the ⓘ shows. `--dimension-padding-info` is the one new size in src/index.css; the zone label's gap is the existing `--gap-small`. The bin of Delete is a copy of the one in `DeckListScreen`, which is outside this task's Files.
+- Read `panelOf` and `confirmDelete` in src/board/Board.tsx. `panelOf` turns the open thing into the panel's heading, its question and the act that deletes it. It returns undefined once the deck no longer holds the thing, which closes the panel and the question. It finds a category only in the chosen dimension.
 
 ### T5 — Save answers and its question
 

@@ -29,6 +29,12 @@ import Pool from "./Pool";
 import Zone from "./Zone";
 import NewField from "../ui/NewField";
 import Panel from "../ui/Panel";
+import Question from "../ui/Question";
+import {
+  deleteCardQuestion,
+  deleteCategoryQuestion,
+  deleteDimensionQuestion,
+} from "../words/deleteQuestion";
 import { refusalWords } from "../words/refusalWords";
 import "./Board.css";
 
@@ -75,14 +81,20 @@ export type BoardProps = {
   acts?: BoardActs;
 };
 
+/** The thing whose panel is open: a card, a dimension, or a category of the chosen dimension. */
+type Opened = { kind: "card" | "dimension" | "category"; id: string };
+
 /**
  * The board over `deck`: the picker, Reset, the Check switch, Retry, the
  * score, the pool and the zones of the chosen dimension, showing `board` and
  * sending every act on it to `dispatch`, and the panel of the card whose ⓘ was
  * pressed. Given `acts`, it also shows the fields "New card", "New dimension"
  * and, while a dimension is chosen, "New category", each of which calls its
- * act; a new dimension is chosen at once. It must be given `board` fitted to
- * `deck`.
+ * act; a new dimension is chosen at once. Given `acts`, each dimension and
+ * each zone's label also holds an ⓘ opening the panel of that dimension or
+ * category, and every panel holds Delete, which calls the act deleting its
+ * thing once the learner agrees to a question. It must be given `board`
+ * fitted to `deck`.
  */
 export default function Board({
   deck,
@@ -97,10 +109,11 @@ export default function Board({
     () => new Map(deck.cards.map((card) => [card.id, card])),
     [deck],
   );
-  const [open, setOpen] = useState<string | null>(null);
+  const [open, setOpen] = useState<Opened | null>(null);
+  // Whether the question before deleting the open thing shows.
+  const [asking, setAsking] = useState(false);
   // The ⓘ that opened the panel, which takes the focus back when it closes.
   const opener = useRef<HTMLElement | null>(null);
-  const openCard = open === null ? undefined : cardsById.get(open);
   const marks: Record<string, Mark> = {};
   for (const card of board.order) {
     const mark = markOf(board, deck, card);
@@ -113,6 +126,9 @@ export default function Board({
     (dimension) => dimension.id === board.dimension,
   );
   const categories = chosen?.categories ?? [];
+  // A panel, and a question over it, shows only while the deck holds its
+  // thing.
+  const panel = open === null ? undefined : panelOf(open);
 
   function cardsIn(place: Place): Card[] {
     return board.order
@@ -130,15 +146,67 @@ export default function Board({
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
   );
 
-  function openPanel(card: string, from: HTMLElement) {
+  /**
+   * The open thing's name, the question before deleting it and the act that
+   * deletes it, or undefined when the deck no longer holds it.
+   */
+  function panelOf(
+    opened: Opened,
+  ):
+    | { heading: string; question: string; remove: (acts: BoardActs) => void }
+    | undefined {
+    if (opened.kind === "card") {
+      const card = cardsById.get(opened.id);
+      return (
+        card && {
+          heading: card.name,
+          question: deleteCardQuestion(card),
+          remove: (acts) => acts.deleteCard(card.id),
+        }
+      );
+    }
+    if (opened.kind === "dimension") {
+      const dimension = deck.dimensions.find((each) => each.id === opened.id);
+      return (
+        dimension && {
+          heading: dimension.name,
+          question: deleteDimensionQuestion(dimension),
+          remove: (acts) => acts.deleteDimension(dimension.id),
+        }
+      );
+    }
+    const category = categories.find((each) => each.id === opened.id);
+    return (
+      chosen &&
+      category && {
+        heading: category.name,
+        question: deleteCategoryQuestion(deck, chosen, category),
+        remove: (acts) => acts.deleteCategory(chosen.id, category.id),
+      }
+    );
+  }
+
+  function openPanel(kind: Opened["kind"], id: string, from: HTMLElement) {
     opener.current = from;
-    setOpen(card);
+    setOpen({ kind, id });
+    setAsking(false);
   }
 
   function closePanel() {
     setOpen(null);
     opener.current?.focus();
   }
+
+  function confirmDelete(acts: BoardActs, remove: (acts: BoardActs) => void) {
+    // Nothing is dispatched: `fitBoard` takes the deleted thing off the board
+    // at the deck's next render (ADR 015).
+    remove(acts);
+    setAsking(false);
+    setOpen(null);
+  }
+
+  const openCard = (card: string, from: HTMLElement) =>
+    openPanel("card", card, from);
 
   /** Makes a dimension of `name` by `acts` and chooses it; returns the words the field shows. */
   function makeDimension(acts: BoardActs, name: string): string | null {
@@ -180,6 +248,10 @@ export default function Board({
             chosen={board.dimension}
             onChoose={(dimension) =>
               dispatch({ type: "chooseDimension", dimension, random })
+            }
+            onOpen={
+              acts &&
+              ((dimension, from) => openPanel("dimension", dimension, from))
             }
           >
             {acts && (
@@ -230,7 +302,7 @@ export default function Board({
           cards={cardsIn({ kind: "pool" })}
           marks={marks}
           disabled={disabled}
-          onOpen={openPanel}
+          onOpen={openCard}
         >
           {acts && (
             <NewField
@@ -256,7 +328,11 @@ export default function Board({
                   cards={cardsIn({ kind: "zone", category: category.id })}
                   marks={marks}
                   disabled={disabled}
-                  onOpen={openPanel}
+                  onOpen={openCard}
+                  onOpenCategory={
+                    acts &&
+                    ((category, from) => openPanel("category", category, from))
+                  }
                 />
               ))}
               {acts && (
@@ -276,7 +352,40 @@ export default function Board({
           )}
         </div>
       </div>
-      {openCard && <Panel heading={openCard.name} onClose={closePanel} />}
+      {panel && (
+        <Panel heading={panel.heading} onClose={closePanel}>
+          {acts && (
+            <div className="panel-row">
+              <button
+                type="button"
+                className="panel-delete"
+                aria-label="Delete"
+                onClick={() => setAsking(true)}
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6" />
+                </svg>
+              </button>
+            </div>
+          )}
+        </Panel>
+      )}
+      {acts && panel && asking && (
+        <Question
+          question={panel.question}
+          confirm="Delete"
+          onConfirm={() => confirmDelete(acts, panel.remove)}
+          onCancel={() => setAsking(false)}
+        />
+      )}
     </DndContext>
   );
 }

@@ -16,8 +16,17 @@
   border-color: var(--color-region-over-border);
 }
 
+/* One row: the category's name, then its ⓘ when it has one. */
 .zone-label {
   flex-basis: var(--full-row);
+  display: flex;
+  align-items: center;
+  gap: var(--gap-small);
   color: var(--color-label);
   font-weight: 600;
+}
+
+/* The zone's ⓘ stands in the label's row, after the name. */
+.zone-info {
+  position: static;
 }

@@ -37,16 +37,20 @@ function boardAfter(deck: Deck, ...actions: DeckBoardAction[]): BoardState {
 function setUp(deck: Deck, board: BoardState, acts?: BoardActs) {
   const user = userEvent.setup();
   const dispatch = vi.fn<BoardProps["dispatch"]>();
-  render(
+  const shown = (deck: Deck, board: BoardState) => (
     <Board
       deck={deck}
       board={board}
       dispatch={dispatch}
       random={zero}
       acts={acts}
-    />,
+    />
   );
-  return { user, dispatch };
+  const { rerender } = render(shown(deck, board));
+  /** Renders the same board over `deck` and `board`, as a new deck arriving does. */
+  const renderAgain = (deck: Deck, board: BoardState) =>
+    rerender(shown(deck, board));
+  return { user, dispatch, renderAgain };
 }
 
 /**
@@ -635,7 +639,7 @@ test("given acts, New card ends the pool, New dimension ends the picker and New 
   );
   let picker = screen.getByRole("group", { name: "Sort by" });
   expect(picker.lastElementChild).toContainElement(field("New dimension"));
-  expect(picker.lastElementChild!.previousElementSibling).toBe(
+  expect(picker.lastElementChild!.previousElementSibling).toContainElement(
     screen.getByRole("button", { name: "Diet" }),
   );
   expect(screen.queryByRole("textbox", { name: "New category" })).toBeNull();
@@ -840,4 +844,281 @@ test("a deck with a dimension reads Choose how to sort to begin before one is ch
   expect(prompt).toHaveClass("board-prompt");
   expect(region("Unsorted").nextElementSibling).toContainElement(prompt);
   expect(screen.queryByText("Add cards and a dimension to begin")).toBeNull();
+});
+
+/** The ⓘ of the dimension named `name`. */
+function dimensionInfo(name: string): HTMLElement {
+  return within(screen.getByRole("button", { name }).parentElement!).getByRole(
+    "button",
+    { name: "ⓘ" },
+  );
+}
+
+/** The ⓘ of the zone named `name`. */
+function zoneInfo(name: string): HTMLElement {
+  return within(labelOf(region(name)).parentElement!).getByRole("button", {
+    name: "ⓘ",
+  });
+}
+
+/** Asserts that `panel` holds Delete alone in a row of its own at its end, and returns Delete. */
+function deleteIn(panel: HTMLElement): HTMLElement {
+  const remove = within(panel).getByRole("button", { name: "Delete" });
+  expect(remove).toHaveAttribute("type", "button");
+  expect(remove).toHaveClass("panel-delete");
+  const row = remove.parentElement!;
+  expect(row).toHaveClass("panel-row");
+  expect([...row.children]).toEqual([remove]);
+  expect(panel.lastElementChild).toBe(row);
+  return remove;
+}
+
+/** The acts called so far, by name. */
+function called(acts: ReturnType<typeof actsOf>): string[] {
+  return Object.entries(acts)
+    .filter(([, act]) => act.mock.calls.length > 0)
+    .map(([name]) => name);
+}
+
+test("given no acts, no dimension and no zone holds an ⓘ and a card's panel holds no Delete", async () => {
+  for (const [deck, board, card] of [
+    [numbered, boardAfter(numbered, choose("dimension-1")), "Shark"],
+    [appDeck, boardAfter(appDeck, ...mixed, toggleCheck), right1],
+  ] as const) {
+    const { user } = setUp(deck, board);
+    const picker = screen.getByRole("group", { name: "Sort by" });
+    expect(within(picker).queryAllByRole("button", { name: "ⓘ" })).toEqual([]);
+    for (const button of within(picker).getAllByRole("button"))
+      expect(button).not.toHaveClass("picker-dimension-info");
+    for (const zone of screen.getAllByRole("region").slice(1))
+      expect(
+        within(labelOf(zone).parentElement!).queryAllByRole("button"),
+      ).toEqual([]);
+    expect(screen.getAllByRole("button", { name: "ⓘ" })).toHaveLength(
+      deck.cards.length,
+    );
+    await user.click(infoOf(card));
+    const panel = screen.getByRole("dialog", { name: card });
+    expect(within(panel).getAllByRole("button")).toEqual([
+      within(panel).getByRole("button", { name: "Close" }),
+    ]);
+    expect(within(panel).queryByRole("button", { name: "Delete" })).toBeNull();
+    cleanup();
+  }
+});
+
+test("given acts, each dimension holds an ⓘ beside its button and each zone's label holds one after the element that names the zone", () => {
+  setUp(
+    numbered,
+    boardAfter(numbered, choose("dimension-1")),
+    actsOf(numbered),
+  );
+  for (const name of ["Habitat", "Diet"]) {
+    const button = screen.getByRole("button", { name });
+    const info = dimensionInfo(name);
+    expect(button).toHaveTextContent(/^(Habitat|Diet)$/);
+    expect(button).not.toContainElement(info);
+    expect(button).toHaveClass("picker-dimension", "picker-dimension-info");
+    expect(info).toHaveTextContent(/^ⓘ$/);
+    expect(info).toHaveAttribute("type", "button");
+    expect([...button.parentElement!.children]).toEqual([button, info]);
+  }
+  const zones = screen.getAllByRole("region").slice(1);
+  expect(zones.map((zone) => region(labelOf(zone).textContent!))).toEqual(
+    zones,
+  );
+  for (const [zone, name] of zones.map(
+    (zone, at) => [zone, ["Ocean", "Forest"][at]] as const,
+  )) {
+    const label = labelOf(zone);
+    expect(label.textContent).toBe(name);
+    expect(label.tagName).toBe("SPAN");
+    const info = zoneInfo(name);
+    expect(info).toHaveTextContent(/^ⓘ$/);
+    expect([...label.parentElement!.children]).toEqual([label, info]);
+    expect(zone.firstElementChild).toBe(label.parentElement);
+  }
+});
+
+test("the ⓘ of a dimension and of a zone each open a panel headed by its name with Delete", async () => {
+  const acts = actsOf(numbered);
+  const { user, dispatch } = setUp(
+    numbered,
+    boardAfter(numbered, choose("dimension-1")),
+    acts,
+  );
+  for (const [info, name, close] of [
+    [dimensionInfo("Diet"), "Diet", "{Escape}"],
+    [zoneInfo("Ocean"), "Ocean", "Close"],
+    [infoOf("Shark"), "Shark", "Close"],
+  ] as const) {
+    expect(screen.queryByRole("dialog")).toBeNull();
+    await user.click(info);
+    const panel = screen.getByRole("dialog", { name });
+    expect(
+      within(panel).getByRole("heading", { level: 2, name }),
+    ).toBeInTheDocument();
+    deleteIn(panel);
+    expect(within(panel).getByRole("button", { name: "Close" })).toHaveFocus();
+    if (close === "Close")
+      await user.click(within(panel).getByRole("button", { name: "Close" }));
+    else await user.keyboard(close);
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(info).toHaveFocus();
+  }
+  expect(called(acts)).toEqual([]);
+  expect(dispatch).not.toHaveBeenCalled();
+});
+
+test("Delete in a card's panel asks the card's question, and confirming calls deleteCard and closes the question and the panel", async () => {
+  const acts = actsOf(numbered);
+  const { user, dispatch } = setUp(numbered, boardAfter(numbered), acts);
+  await user.click(infoOf("Shark"));
+  await user.click(deleteIn(screen.getByRole("dialog", { name: "Shark" })));
+  const question = screen.getByRole("alertdialog", {
+    name: 'Delete the card "Shark"? Its answers will be lost.',
+  });
+  expect(called(acts)).toEqual([]);
+  await user.click(within(question).getByRole("button", { name: "Delete" }));
+  expect(acts.deleteCard).toHaveBeenCalledExactlyOnceWith("card-1");
+  expect(called(acts)).toEqual(["deleteCard"]);
+  expect(screen.queryByRole("alertdialog")).toBeNull();
+  expect(screen.queryByRole("dialog")).toBeNull();
+  expect(dispatch).not.toHaveBeenCalled();
+});
+
+test("Delete in a category's panel asks the question that counts its cards, and confirming calls deleteCategory with the chosen dimension", async () => {
+  // In `partial` Deer and Owl have Forest as their answer, Platypus none.
+  for (const [deck, dimension, category, id, words] of [
+    [
+      partial,
+      "habitat",
+      "Forest",
+      "forest",
+      'Delete the category "Forest"? 2 cards\' answers will be lost.',
+    ],
+    [
+      numbered,
+      "dimension-2",
+      "Carnivore",
+      "category-4",
+      'Delete the category "Carnivore"? 1 card\'s answer will be lost.',
+    ],
+  ] as const) {
+    const acts = actsOf(deck);
+    const { user, dispatch } = setUp(
+      deck,
+      boardAfter(deck, choose(dimension)),
+      acts,
+    );
+    await user.click(zoneInfo(category));
+    await user.click(deleteIn(screen.getByRole("dialog", { name: category })));
+    const question = screen.getByRole("alertdialog", { name: words });
+    await user.click(within(question).getByRole("button", { name: "Delete" }));
+    expect(acts.deleteCategory).toHaveBeenCalledExactlyOnceWith(dimension, id);
+    expect(called(acts)).toEqual(["deleteCategory"]);
+    expect(screen.queryByRole("alertdialog")).toBeNull();
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(dispatch).not.toHaveBeenCalled();
+    cleanup();
+  }
+});
+
+test("Delete in a dimension's panel asks the question that counts its categories, and confirming calls deleteDimension", async () => {
+  const acts = actsOf(numbered);
+  const { user, dispatch } = setUp(
+    numbered,
+    boardAfter(numbered, choose("dimension-1")),
+    acts,
+  );
+  await user.click(dimensionInfo("Diet"));
+  await user.click(deleteIn(screen.getByRole("dialog", { name: "Diet" })));
+  const question = screen.getByRole("alertdialog", {
+    name: 'Delete the dimension "Diet"? 2 categories and their answers will be lost.',
+  });
+  await user.click(within(question).getByRole("button", { name: "Delete" }));
+  expect(acts.deleteDimension).toHaveBeenCalledExactlyOnceWith("dimension-2");
+  expect(called(acts)).toEqual(["deleteDimension"]);
+  expect(screen.queryByRole("alertdialog")).toBeNull();
+  expect(screen.queryByRole("dialog")).toBeNull();
+  expect(dispatch).not.toHaveBeenCalled();
+});
+
+test("Cancel closes the question and keeps the panel and calls no act", async () => {
+  const acts = actsOf(numbered);
+  const { user, dispatch } = setUp(
+    numbered,
+    boardAfter(numbered, choose("dimension-1")),
+    acts,
+  );
+  for (const [info, name] of [
+    [infoOf("Shark"), "Shark"],
+    [dimensionInfo("Habitat"), "Habitat"],
+    [zoneInfo("Forest"), "Forest"],
+  ] as const) {
+    await user.click(info);
+    const panel = screen.getByRole("dialog", { name });
+    const remove = deleteIn(panel);
+    await user.click(remove);
+    await user.click(
+      within(screen.getByRole("alertdialog")).getByRole("button", {
+        name: "Cancel",
+      }),
+    );
+    expect(screen.queryByRole("alertdialog")).toBeNull();
+    expect(screen.getByRole("dialog", { name })).toBe(panel);
+    expect(remove).toHaveFocus();
+    await user.click(within(panel).getByRole("button", { name: "Close" }));
+  }
+  expect(called(acts)).toEqual([]);
+  expect(dispatch).not.toHaveBeenCalled();
+});
+
+test("a panel closes when the deck no longer holds its thing", async () => {
+  const withoutShark: Deck = { ...numbered, cards: [numbered.cards[1]] };
+  const withoutDiet: Deck = {
+    ...numbered,
+    dimensions: [numbered.dimensions[0]],
+  };
+  const withoutOcean: Deck = {
+    ...numbered,
+    dimensions: [
+      {
+        ...numbered.dimensions[0],
+        categories: [numbered.dimensions[0].categories[1]],
+      },
+      numbered.dimensions[1],
+    ],
+  };
+  const withoutHabitat: Deck = {
+    ...numbered,
+    dimensions: [numbered.dimensions[1]],
+  };
+  for (const [info, name, after, asking] of [
+    [() => infoOf("Shark"), "Shark", withoutShark, true],
+    [() => dimensionInfo("Diet"), "Diet", withoutDiet, false],
+    [() => zoneInfo("Ocean"), "Ocean", withoutOcean, true],
+    [() => zoneInfo("Ocean"), "Ocean", withoutHabitat, true],
+  ] as const) {
+    const acts = actsOf(numbered);
+    const { user, renderAgain } = setUp(
+      numbered,
+      boardAfter(numbered, choose("dimension-1")),
+      acts,
+    );
+    await user.click(info());
+    const panel = screen.getByRole("dialog", { name });
+    if (asking) await user.click(deleteIn(panel));
+    renderAgain(
+      after,
+      boardAfter(
+        after,
+        ...(after === withoutHabitat ? [] : [choose("dimension-1")]),
+      ),
+    );
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(screen.queryByRole("alertdialog")).toBeNull();
+    expect(called(acts)).toEqual([]);
+    cleanup();
+  }
 });

@@ -50,6 +50,8 @@
   /* Space between the ⓘ and the card's border, above it and beside it. */
   --info-inset: 3px;
   --info-font-size: 13px;
+  /* A dimension's padding on the side of its ⓘ, which leaves the ⓘ room. */
+  --dimension-padding-info: 24px;
   --card-radius: 0.375rem;
   --control-padding-block: 0.375rem;
   --control-padding-inline: 0.75rem;
