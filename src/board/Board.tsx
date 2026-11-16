@@ -14,6 +14,7 @@ import {
   type ReactNode,
 } from "react";
 import type { Card, Deck } from "../../convex/model/deck";
+import type { ActResult, SaveAnswersResult } from "../../convex/model/deckActs";
 import {
   markOf,
   score,
@@ -38,11 +39,30 @@ const silence: Announcements = {
   onDragCancel: () => undefined,
 };
 
+/**
+ * The acts that change the deck a board shows. Each takes ids and names as
+ * the act of its name in convex/model/deckActs.ts does, and returns that
+ * act's result on the deck.
+ */
+export type BoardActs = {
+  addCard(name: string): ActResult;
+  addDimension(name: string): ActResult;
+  addCategory(dimension: string, name: string): ActResult;
+  deleteCard(card: string): ActResult;
+  deleteDimension(dimension: string): ActResult;
+  deleteCategory(dimension: string, category: string): ActResult;
+  saveAnswers(
+    dimension: string,
+    answers: { card: string; category: string }[],
+  ): SaveAnswersResult;
+};
+
 export type BoardProps = {
   deck: Deck;
   /** The deck's board, fitted to `deck`. */
   board: BoardState;
-  dispatch: (action: DeckBoardAction) => void;
+  /** Sends an action to the deck's board; a deck handed with it must be one an act of the deck returned, and the action applies to that deck. */
+  dispatch: (action: DeckBoardAction, deck?: Deck) => void;
   /** Draws the shuffle of Reset, of Retry and of a change of dimension. */
   random?: RandomSource;
   /** Shown at the end of the bar, after the score. */

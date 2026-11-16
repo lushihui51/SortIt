@@ -56,13 +56,19 @@ export function BoardsProvider({
  * before the deck's board is loaded, and is otherwise fitted to `deck`;
  * `random` draws the shuffle of that load. Every board is kept by deck id, so
  * two decks with one id share a board.
+ *
+ * The dispatch applies an action to the deck last given to the hook or, when
+ * it is handed a deck, to that deck for that action alone. A handed deck must
+ * bear the id of the hook's deck: an action sent in the same press as an act
+ * on the deck hands it the deck the act returned, which the hook is given
+ * only at its next render.
  */
 export function useDeckBoard(
   deck: Deck,
   random: RandomSource = Math.random,
 ): {
   board: BoardState | null;
-  dispatch: (action: DeckBoardAction) => void;
+  dispatch: (action: DeckBoardAction, deck?: Deck) => void;
 } {
   const context = useContext(BoardsContext);
   if (context === null) {
@@ -86,8 +92,8 @@ export function useDeckBoard(
   }, [deck]);
 
   const dispatchDeck = useCallback(
-    (action: DeckBoardAction) => {
-      const current = latestDeck.current;
+    (action: DeckBoardAction, handed?: Deck) => {
+      const current = handed ?? latestDeck.current;
       dispatch(
         action.type === "toggleCheck"
           ? { type: "toggleCheck", deckId: current.id }

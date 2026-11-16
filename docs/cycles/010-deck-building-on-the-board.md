@@ -36,7 +36,7 @@ Judgement: The engineer runs `npx convex dev` and `npm run dev`, signs in and ma
 
 **Status**
 
-- [ ]
+- [x]
 
 **Goal**
 
@@ -135,7 +135,13 @@ dispatch: (action: DeckBoardAction, deck?: Deck) => void;
 
 **Debrief**
 
-None.
+- `npx vitest run src/decks src/board/BoardsProvider.test.tsx --reporter=verbose` shows ✓ for all four tests of src/decks/optimistic.test.ts named in Done when. They run each of the seven acts against a store holding both queries and against a store holding only the list. For the refusal cases they run nine refused calls, a deck's own query of null, a list without the deck, and an empty store. The no-change test freezes the list, the deck's own query and the arguments.
+- The same run shows ✓ for all four tests of src/decks/useDeckActs.test.tsx named in Done when. The first one also calls the optimistic update each mutation was given and asserts it calls `actLocally` with the store, the act's name and the sent arguments. To make this possible, the file mocks `actLocally` alone and keeps the rest of src/decks/optimistic.ts.
+- The same run shows ✓ for `the dispatch of useDeckBoard sends an action with the deck it is handed in place of the deck of the last render`. With the line `handed ?? latestDeck.current` changed back to `latestDeck.current` in `useDeckBoard`, the test fails, and passes again once the change is restored.
+- `npm test`: 23 test files passed, 215 tests passed. `npm run typecheck` exits with status 0 and prints nothing beyond its command line.
+- I extended the existing test `a mutation that throws leaves no unhandled rejection and writes the error to the console` with `forDeck(...).addCard`, so it now also covers the requirement to catch a thing's mutation that throws. Its name is unchanged.
+- Departure from guidance: `actLocally` hands the act every argument but `deck`, as the guidance says, but it casts the act (an entry of the map `thingActs` keyed by `ThingAct`) and leaves the arguments uncast. The effect is the same, with one cast in place of seven.
+- Read `forDeck` and `useThingMutation` in src/decks/useDeckActs.ts. Every act passes through the one inner function `apply`, which runs the act, sends only when the result is ok and its deck is not the same object, and returns the result. `useThingMutation` gives each of the seven mutations its optimistic update by its act's name.
 
 ### T2 — Words of the questions
 

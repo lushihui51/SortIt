@@ -241,3 +241,42 @@ test("the dispatch of useDeckBoard applies an action to its own deck's board", (
   });
   expect(seen[other.id].board).toBe(untouched);
 });
+
+test("the dispatch of useDeckBoard sends an action with the deck it is handed in place of the deck of the last render", () => {
+  // The deck an act adding Diet returned, not yet given to `Screen`.
+  const grown: Deck = {
+    ...deck,
+    dimensions: [
+      ...deck.dimensions,
+      { id: "dimension-2", name: "Diet", categories: [] },
+    ],
+  };
+  // The board of the deck's id fitted to `grown`, where Diet stays in sight
+  // while `Screen` still shows `deck`.
+  let viewed: DeckBoard["board"] = null;
+  function Viewer() {
+    viewed = useDeckBoard(grown, zero).board;
+    return null;
+  }
+  render(
+    <BoardsProvider>
+      <Screen deck={deck} random={zero} />
+      <Viewer />
+    </BoardsProvider>,
+  );
+
+  act(() => {
+    seen[deck.id].dispatch(
+      { type: "chooseDimension", dimension: "dimension-2", random: zero },
+      grown,
+    );
+  });
+  expect(viewed!.dimension).toBe("dimension-2");
+
+  // The next action carries the deck of the last render, which has no Diet,
+  // so the board it fits leaves no dimension chosen.
+  act(() => {
+    seen[deck.id].dispatch({ type: "reset", random: zero });
+  });
+  expect(viewed!.dimension).toBeNull();
+});

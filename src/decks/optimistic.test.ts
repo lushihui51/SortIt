@@ -4,7 +4,13 @@ import type { FunctionReference } from "convex/server";
 import { expect, test } from "vitest";
 import { api } from "../../convex/_generated/api";
 import type { Deck } from "../../convex/model/deck";
-import { createDeckLocally, deleteDeckLocally } from "./optimistic";
+import * as acts from "../../convex/model/deckActs";
+import {
+  actLocally,
+  createDeckLocally,
+  deleteDeckLocally,
+  type ThingAct,
+} from "./optimistic";
 
 /**
  * A store of the client's queries, as Convex hands an optimistic update one,
@@ -131,4 +137,157 @@ test("neither function changes a value the store gave it", () => {
   expect({ list, own }).toEqual(before);
   const decks = store.getQuery(api.decks.list) as Deck[];
   expect(decks.map((deck) => deck.name)).toEqual(["History", "Chemistry"]);
+});
+
+/** A deck with two categories, a card with an answer and a card with none. */
+const animals: Deck = {
+  id: "id-a",
+  name: "Animals",
+  dimensions: [
+    {
+      id: "d1",
+      name: "Habitat",
+      categories: [
+        { id: "c1", name: "Sea" },
+        { id: "c2", name: "Land" },
+      ],
+    },
+  ],
+  cards: [
+    { id: "k1", name: "Orca", answers: { d1: "c1" } },
+    { id: "k2", name: "Deer", answers: {} },
+  ],
+};
+
+/** Each act on a deck's things with arguments that change `animals`, without the deck's id. */
+const changes: [ThingAct, Record<string, unknown>][] = [
+  ["addCard", { id: "k3", name: "Crab" }],
+  ["deleteCard", { card: "k1" }],
+  ["addDimension", { id: "d2", name: "Diet" }],
+  ["deleteDimension", { dimension: "d1" }],
+  ["addCategory", { dimension: "d1", id: "c3", name: "Air" }],
+  ["deleteCategory", { dimension: "d1", category: "c1" }],
+  [
+    "saveAnswers",
+    {
+      dimension: "d1",
+      answers: [
+        { card: "k1", category: "c2" },
+        { card: "k2", category: "c2" },
+      ],
+    },
+  ],
+];
+
+/** The deck the act of that name returns for `deck` and `args`. */
+function resultOf(deck: Deck, act: ThingAct, args: object): Deck {
+  const result = (acts[act] as (deck: Deck, args: object) => acts.ActResult)(
+    deck,
+    args,
+  );
+  if (!result.ok)
+    throw new Error(`${act} refused in a test that changes the deck.`);
+  return result.deck;
+}
+
+test("actLocally sets the deck's own query and its place in the list to the deck its act returns, for each of the seven acts", () => {
+  const biology = deckOf("id-b", "Biology");
+  const history = deckOf("id-c", "History");
+  for (const [act, args] of changes) {
+    const changed = resultOf(animals, act, args);
+    expect(changed).not.toEqual(animals);
+    const store = storeOf([
+      [api.decks.list, {}, [biology, animals, history]],
+      [api.decks.get, { id: "id-a" }, animals],
+    ]);
+    actLocally(store, act, { deck: "id-a", ...args });
+    expect(store.getQuery(api.decks.get, { id: "id-a" })).toEqual(changed);
+    expect(store.getQuery(api.decks.list)).toEqual([biology, changed, history]);
+  }
+
+  // The list is left as it is while it has not loaded or does not hold the deck.
+  const [act, args] = changes[0];
+  const changed = resultOf(animals, act, args);
+  const unlisted = storeOf([[api.decks.get, { id: "id-a" }, animals]]);
+  actLocally(unlisted, act, { deck: "id-a", ...args });
+  expect(unlisted.getQuery(api.decks.get, { id: "id-a" })).toEqual(changed);
+  expect(unlisted.getQuery(api.decks.list)).toBeUndefined();
+  const others = [biology];
+  const elsewhere = storeOf([
+    [api.decks.list, {}, others],
+    [api.decks.get, { id: "id-a" }, animals],
+  ]);
+  actLocally(elsewhere, act, { deck: "id-a", ...args });
+  expect(elsewhere.getQuery(api.decks.get, { id: "id-a" })).toEqual(changed);
+  expect(elsewhere.getQuery(api.decks.list)).toBe(others);
+});
+
+test("actLocally takes the deck from the list while the deck's own query holds no value, and sets both", () => {
+  const biology = deckOf("id-b", "Biology");
+  for (const [act, args] of changes) {
+    const changed = resultOf(animals, act, args);
+    const store = storeOf([[api.decks.list, {}, [animals, biology]]]);
+    actLocally(store, act, { deck: "id-a", ...args });
+    expect(store.getQuery(api.decks.get, { id: "id-a" })).toEqual(changed);
+    expect(store.getQuery(api.decks.list)).toEqual([changed, biology]);
+  }
+});
+
+test("actLocally changes nothing when the act refuses, when the deck's own query holds null, or when neither that query nor the list holds the deck", () => {
+  const refused: [ThingAct, Record<string, unknown>][] = [
+    ["addCard", { id: "k3", name: "Orca" }],
+    ["addCard", { id: "k3", name: "  " }],
+    ["deleteCard", { card: "k9" }],
+    ["addDimension", { id: "d2", name: " Habitat" }],
+    ["deleteDimension", { dimension: "d9" }],
+    ["addCategory", { dimension: "d1", id: "c3", name: "Sea" }],
+    ["addCategory", { dimension: "d9", id: "c3", name: "Air" }],
+    ["deleteCategory", { dimension: "d1", category: "c9" }],
+    ["saveAnswers", { dimension: "d9", answers: [] }],
+  ];
+  for (const [act, args] of refused) {
+    const store = storeOf([
+      [api.decks.list, {}, [animals]],
+      [api.decks.get, { id: "id-a" }, animals],
+    ]);
+    actLocally(store, act, { deck: "id-a", ...args });
+    expect(store.sets).toBe(0);
+  }
+
+  for (const [act, args] of changes) {
+    const deleted = storeOf([
+      [api.decks.list, {}, [animals]],
+      [api.decks.get, { id: "id-a" }, null],
+    ]);
+    actLocally(deleted, act, { deck: "id-a", ...args });
+    expect(deleted.sets).toBe(0);
+
+    const absent = storeOf([[api.decks.list, {}, [deckOf("id-b", "Biology")]]]);
+    actLocally(absent, act, { deck: "id-a", ...args });
+    expect(absent.sets).toBe(0);
+
+    const empty = storeOf([]);
+    actLocally(empty, act, { deck: "id-a", ...args });
+    expect(empty.sets).toBe(0);
+  }
+});
+
+test("actLocally changes no value the store gave it", () => {
+  for (const [act, args] of changes) {
+    const list = frozen([deckOf("id-b", "Biology"), structuredClone(animals)]);
+    const own = frozen(structuredClone(animals));
+    const given = frozen(structuredClone(args));
+    const before = structuredClone({ list, own, given });
+    const store = storeOf([
+      [api.decks.list, {}, list],
+      [api.decks.get, { id: "id-a" }, own],
+    ]);
+
+    actLocally(store, act, { deck: "id-a", ...given });
+
+    expect({ list, own, given }).toEqual(before);
+    expect(store.getQuery(api.decks.get, { id: "id-a" })).toEqual(
+      resultOf(animals, act, args),
+    );
+  }
 });
