@@ -27,3 +27,6 @@ Canvas: https://claude.ai/artifact/6dphuHA8nGiktfiES8z7q4
   - Reason: drawing 1 shows a cross at the upper right corner of the sign-in form, and no item gives its word.
   - Owner: /product-decide
   - Drawings: 1
+- B23 Which parts of the app may call Convex: the screen of a learner's deck alone, or also the guard, the screen of the app's own deck, the list of decks and the hook that sends every act?
+  - Reason: ADR 016 has only the screen of a learner's deck call Convex, while ADR 017 has the guard `SignedInOnly` read Convex's `useConvexAuth()`, and the list of decks reads the learner's decks and the hook sends every act through Convex.
+  - Owner: /code-decide
