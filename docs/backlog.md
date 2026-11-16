@@ -30,3 +30,6 @@ Canvas: https://claude.ai/artifact/6dphuHA8nGiktfiES8z7q4
 - B23 Which parts of the app may call Convex: the screen of a learner's deck alone, or also the guard, the screen of the app's own deck, the list of decks and the hook that sends every act?
   - Reason: ADR 016 has only the screen of a learner's deck call Convex, while ADR 017 has the guard `SignedInOnly` read Convex's `useConvexAuth()`, and the list of decks reads the learner's decks and the hook sends every act through Convex.
   - Owner: /code-decide
+- B24 Does the learner read why a name is refused at each letter they type, or only once they press Enter?
+  - Reason: PDR 009 holds a learner's names to the rules as the learner types, and ADR 011 has a refused name read as they type. PDR 011 makes a thing only when the learner types its name into a field and presses Enter, and no item says whether a name is refused before Enter.
+  - Owner: /product-decide
