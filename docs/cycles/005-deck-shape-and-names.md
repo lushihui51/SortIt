@@ -212,7 +212,7 @@ What to read:
 
 **Status**
 
-- [ ]
+- [x]
 
 **Goal**
 
@@ -280,4 +280,28 @@ export type BoardProps = {
 
 **Debrief**
 
-None.
+Evidence:
+
+- `npx vitest run --reporter=verbose src/board` listed `src/board/Board.test.tsx > shows each dimension, zone and card by its name for a deck whose ids differ from its names` as passed.
+- The same run printed `Test Files  2 passed (2)` and `Tests  55 passed (55)`: the 54 tests from before the task and the new one. `npm test` printed `Test Files  6 passed (6)` and `Tests  69 passed (69)`.
+- `npm run build` exited 0.
+- The `git grep` for `[iI]tem` printed `src/board/Board.css:1` and `src/board/DimensionPicker.css:1` and nothing else.
+- The `git grep` for `ItemSet|shippedSet|SetFault|validSet|/set/|set\.json` printed nothing and exited 1.
+- The `git grep -w "set"` printed `src/recordCitationGuard.test.ts:1` and nothing else.
+- `npm run typecheck` exited 0.
+- Two changes made by hand and then undone show the tests catch a board that mixes ids and names: `Card` showing `card.id` failed the new test alone, 1 failed and 54 passed; `load` keying the board by `card.name` failed 15 tests.
+
+Departures and choices:
+
+- No guidance was departed from. `Pool`, `Zone` and the component `Card` take `Card` objects as `CardModel`, `Zone` takes its `Category`, and `DimensionPicker` takes `Dimension` objects.
+- `Board` builds a `Map` from card id to `Card` with `useMemo` over `deck`, and `cardsIn` returns `Card` objects through it.
+- In src/board/board.ts every local that held a card name, now a card id, is named `id` or `ids`. The `place` case reads the action's place into a local so that TypeScript narrows it inside the callback of `some`.
+- The deck of src/board/board.test.ts gives ids such as `dimension-1`, `category-1` and `card-1`, kept in one object `id`, and every test names a card, a dimension or a category through it. The test once named `chooseDimension with a name the deck lacks returns the same state` is now `chooseDimension with an id the deck lacks returns the same state`; it still passes `"Size"`.
+- src/board/Board.test.tsx renders `appDeck`. Its helper `answer` now looks up the card's answer by the Habitat dimension's id and returns that category's name, and the zone lists compare against the categories' names.
+- The new test uses a deck of two cards and two dimensions of its own. It checks the picker's buttons, the pool, the zones' labels, placing both cards by click, Check's marks by accessible name and the score, and that no text on the board looks like one of the deck's ids.
+- Member comments now say id where they said name, in `BoardState`, `Place`, `PoolProps`, `CardProps` and `DimensionPickerProps`, and the interface comments of `Card` and `DimensionPicker` say each shows a name.
+
+What to read:
+
+- `cardsIn` in src/board/Board.tsx: it asserts that every card id in the board's state is a card of `deck`. The interface comment of `Board` says it reads `deck` only when it first renders, and it already read the dimensions on every render before this task. A `deck` swapped after the first render for one with other card ids would make `cardsIn` hand `undefined` to `Pool` and `Zone`.
+- The app was not opened in a browser in this task; the cycle's Judgement by hand is the engineer's under ADR 018.

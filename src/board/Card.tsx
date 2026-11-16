@@ -1,14 +1,15 @@
 import { useDraggable } from "@dnd-kit/core";
+import type { Card as CardModel } from "../../convex/model/deck";
 import type { Mark } from "./board";
 import "./Card.css";
 
 export type CardProps = {
-  /** The card's name. */
-  card: string;
+  card: CardModel;
   selected: boolean;
   /** The card's verdict from Check; null while the card bears no mark. */
   mark: Mark | null;
   disabled: boolean;
+  /** Called with the card's id. */
   onPress: (card: string) => void;
 };
 
@@ -19,9 +20,9 @@ const words: Record<Mark, string> = {
 };
 
 /**
- * One card of the deck as a button; pressing it calls `onPress` with `card`.
- * It is also a draggable whose id is `card`, so it must be rendered inside the
- * board's `DndContext`.
+ * One card of the deck as a button showing the card's name; pressing it calls
+ * `onPress` with the card's id. It is also a draggable whose id is the card's
+ * id, so it must be rendered inside the board's `DndContext`.
  */
 export default function Card({
   card,
@@ -33,7 +34,7 @@ export default function Card({
   // The draggable's `attributes` are left off the button: they add a role
   // description and a description in words the app never shows.
   const { setNodeRef, listeners, transform, isDragging } = useDraggable({
-    id: card,
+    id: card.id,
     disabled,
   });
   return (
@@ -47,7 +48,7 @@ export default function Card({
       }
       data-mark={mark ?? undefined}
       disabled={disabled}
-      onClick={() => onPress(card)}
+      onClick={() => onPress(card.id)}
       style={
         transform
           ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)` }
@@ -55,7 +56,7 @@ export default function Card({
       }
       {...listeners}
     >
-      {card}
+      {card.name}
       {/* The icon shows the mark beside its colour; the hidden word speaks it,
           so the spoken name reads "<card> Correct" or "<card> Incorrect". */}
       {mark && " "}

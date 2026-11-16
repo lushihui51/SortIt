@@ -1,23 +1,29 @@
-import type { AppDeckFile } from "../deck/appDeckFile";
+import type { Deck } from "../../convex/model/deck";
 
 /** Returns a number in [0, 1), as Math.random does. */
 export type RandomSource = () => number;
 
-export type Place = { kind: "pool" } | { kind: "zone"; category: string };
+export type Place =
+  | { kind: "pool" }
+  | {
+      kind: "zone";
+      /** The id of a category of the chosen dimension. */
+      category: string;
+    };
 
 /** A card's verdict at Check: whether its zone is the card's answer. */
 export type Mark = "correct" | "incorrect";
 
 export type BoardState = {
-  /** The chosen dimension's name; null while none is chosen. */
+  /** The chosen dimension's id; null while none is chosen. */
   dimension: string | null;
-  /** Where each card lies, keyed by card name; holds every card of the deck once the board is loaded. */
+  /** Where each card lies, keyed by card id; holds every card of the deck once the board is loaded. */
   places: Record<string, Place>;
-  /** Every card name exactly once; the pool and every zone show their cards in this order. */
+  /** Every card id exactly once; the pool and every zone show their cards in this order. */
   order: string[];
-  /** The mark of each card that bears one, keyed by card name; a card with no entry is unmarked. */
+  /** The mark of each card that bears one, keyed by card id; a card with no entry is unmarked. */
   marks: Record<string, Mark>;
-  /** The selected card's name; null while no card is selected. */
+  /** The selected card's id; null while no card is selected. */
   selected: string | null;
 };
 
@@ -51,11 +57,11 @@ export const emptyBoard: BoardState = {
 export function score(
   state: BoardState,
 ): { correct: number; total: number } | null {
-  const names = Object.keys(state.places);
-  if (!names.every((name) => Object.hasOwn(state.marks, name))) return null;
+  const ids = Object.keys(state.places);
+  if (!ids.every((id) => Object.hasOwn(state.marks, id))) return null;
   return {
-    correct: names.filter((name) => state.marks[name] === "correct").length,
-    total: names.length,
+    correct: ids.filter((id) => state.marks[id] === "correct").length,
+    total: ids.length,
   };
 }
 
@@ -74,8 +80,8 @@ export function shuffle<T>(list: readonly T[], random: RandomSource): T[] {
 
 const pool: Place = { kind: "pool" };
 
-function allInPool(names: readonly string[]): Record<string, Place> {
-  return Object.fromEntries(names.map((name) => [name, pool]));
+function allInPool(ids: readonly string[]): Record<string, Place> {
+  return Object.fromEntries(ids.map((id) => [id, pool]));
 }
 
 function samePlace(a: Place, b: Place): boolean {
@@ -93,22 +99,21 @@ function withoutMark(
 }
 
 function sameBoard(a: BoardState, b: BoardState): boolean {
-  const names = Object.keys(a.places);
+  const ids = Object.keys(a.places);
   const marked = Object.keys(a.marks);
   return (
     a.dimension === b.dimension &&
     a.selected === b.selected &&
     a.order.length === b.order.length &&
-    a.order.every((name, index) => name === b.order[index]) &&
-    names.length === Object.keys(b.places).length &&
-    names.every(
-      (name) =>
-        Object.hasOwn(b.places, name) &&
-        samePlace(a.places[name], b.places[name]),
+    a.order.every((id, index) => id === b.order[index]) &&
+    ids.length === Object.keys(b.places).length &&
+    ids.every(
+      (id) =>
+        Object.hasOwn(b.places, id) && samePlace(a.places[id], b.places[id]),
     ) &&
     marked.length === Object.keys(b.marks).length &&
     marked.every(
-      (name) => Object.hasOwn(b.marks, name) && a.marks[name] === b.marks[name],
+      (id) => Object.hasOwn(b.marks, id) && a.marks[id] === b.marks[id],
     )
   );
 }
@@ -119,16 +124,16 @@ function sameBoard(a: BoardState, b: BoardState): boolean {
  * state it was given, the same object.
  */
 export function createBoardReducer(
-  deck: AppDeckFile,
+  deck: Deck,
 ): (state: BoardState, action: BoardAction) => BoardState {
   function next(state: BoardState, action: BoardAction): BoardState {
     switch (action.type) {
       case "load": {
-        const names = deck.cards.map((card) => card.name);
+        const ids = deck.cards.map((card) => card.id);
         return {
           dimension: null,
-          places: allInPool(names),
-          order: shuffle(names, action.random),
+          places: allInPool(ids),
+          order: shuffle(ids, action.random),
           marks: {},
           selected: null,
         };
@@ -137,7 +142,7 @@ export function createBoardReducer(
         if (
           action.dimension === state.dimension ||
           !deck.dimensions.some(
-            (dimension) => dimension.name === action.dimension,
+            (dimension) => dimension.id === action.dimension,
           )
         ) {
           return state;
@@ -170,14 +175,15 @@ export function createBoardReducer(
           selected: null,
         };
       case "place": {
-        const dimension = deck.dimensions.find(
-          (d) => d.name === state.dimension,
-        );
+        const { place } = action;
+        const dimension = deck.dimensions.find((d) => d.id === state.dimension);
         if (
           dimension === undefined ||
           !Object.hasOwn(state.places, action.card) ||
-          (action.place.kind === "zone" &&
-            !dimension.categories.includes(action.place.category))
+          (place.kind === "zone" &&
+            !dimension.categories.some(
+              (category) => category.id === place.category,
+            ))
         ) {
           return state;
         }
@@ -191,14 +197,14 @@ export function createBoardReducer(
         const dimension = state.dimension;
         if (
           dimension === null ||
-          state.order.some((name) => state.places[name].kind === "pool")
+          state.order.some((id) => state.places[id].kind === "pool")
         ) {
           return state;
         }
         const marks: Record<string, Mark> = {};
         for (const card of deck.cards) {
-          const place = state.places[card.name];
-          marks[card.name] =
+          const place = state.places[card.id];
+          marks[card.id] =
             place.kind === "zone" && place.category === card.answers[dimension]
               ? "correct"
               : "incorrect";
@@ -206,8 +212,8 @@ export function createBoardReducer(
         return { ...state, marks, selected: null };
       }
       case "retry": {
-        const positions = state.order.flatMap((name, index) =>
-          state.marks[name] === "incorrect" ? [index] : [],
+        const positions = state.order.flatMap((id, index) =>
+          state.marks[id] === "incorrect" ? [index] : [],
         );
         if (positions.length === 0) return state;
         const returned = positions.map((index) => state.order[index]);
@@ -218,9 +224,9 @@ export function createBoardReducer(
         positions.forEach((position, k) => {
           order[position] = permuted[k];
         });
-        for (const name of returned) {
-          places[name] = pool;
-          delete marks[name];
+        for (const id of returned) {
+          places[id] = pool;
+          delete marks[id];
         }
         return { ...state, places, order, marks, selected: null };
       }

@@ -8,7 +8,7 @@ import {
   type DragStartEvent,
 } from "@dnd-kit/core";
 import { useMemo, useReducer, type ReactElement } from "react";
-import type { AppDeckFile } from "../deck/appDeckFile";
+import type { Card, Deck } from "../../convex/model/deck";
 import {
   createBoardReducer,
   emptyBoard,
@@ -31,7 +31,7 @@ const silence: Announcements = {
 };
 
 export type BoardProps = {
-  deck: AppDeckFile;
+  deck: Deck;
   /** Draws every shuffle of the cards. */
   random?: RandomSource;
 };
@@ -46,6 +46,10 @@ export default function Board({
   random = Math.random,
 }: BoardProps): ReactElement {
   const reducer = useMemo(() => createBoardReducer(deck), [deck]);
+  const cardsById = useMemo(
+    () => new Map(deck.cards.map((card) => [card.id, card])),
+    [deck],
+  );
   const [state, dispatch] = useReducer(reducer, emptyBoard, (board) =>
     reducer(board, { type: "load", random }),
   );
@@ -56,16 +60,18 @@ export default function Board({
   const canRetry = Object.values(state.marks).includes("incorrect");
   const verdict = score(state);
   const categories =
-    deck.dimensions.find((dimension) => dimension.name === state.dimension)
+    deck.dimensions.find((dimension) => dimension.id === state.dimension)
       ?.categories ?? [];
 
-  function cardsIn(place: Place): string[] {
-    return state.order.filter((card) => {
-      const at = state.places[card];
-      return place.kind === "pool"
-        ? at.kind === "pool"
-        : at.kind === "zone" && at.category === place.category;
-    });
+  function cardsIn(place: Place): Card[] {
+    return state.order
+      .filter((card) => {
+        const at = state.places[card];
+        return place.kind === "pool"
+          ? at.kind === "pool"
+          : at.kind === "zone" && at.category === place.category;
+      })
+      .map((card) => cardsById.get(card)!);
   }
 
   // A press that moves less than this is a click or tap, not a drag (ADR 014).
@@ -116,7 +122,7 @@ export default function Board({
       >
         <div className="board-bar">
           <DimensionPicker
-            dimensions={deck.dimensions.map((dimension) => dimension.name)}
+            dimensions={deck.dimensions}
             chosen={state.dimension}
             onChoose={(dimension) =>
               dispatch({ type: "chooseDimension", dimension, random })
@@ -172,14 +178,16 @@ export default function Board({
           ) : (
             categories.map((category) => (
               <Zone
-                key={category}
+                key={category.id}
                 category={category}
-                cards={cardsIn({ kind: "zone", category })}
+                cards={cardsIn({ kind: "zone", category: category.id })}
                 selected={state.selected}
                 marks={state.marks}
                 disabled={disabled}
                 onPressCard={select}
-                onPressLabel={() => send({ kind: "zone", category })}
+                onPressLabel={() =>
+                  send({ kind: "zone", category: category.id })
+                }
               />
             ))
           )}

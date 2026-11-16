@@ -1,10 +1,11 @@
 import { useDroppable } from "@dnd-kit/core";
 import { useId } from "react";
+import type { Category } from "../../convex/model/deck";
 import Card from "./Card";
 import "./Zone.css";
 import type { PoolProps } from "./Pool";
 
-export type ZoneProps = PoolProps & { category: string };
+export type ZoneProps = PoolProps & { category: Category };
 
 /**
  * One zone: a region named by its label, the category's name, holding its
@@ -22,8 +23,8 @@ export default function Zone({
 }: ZoneProps) {
   const labelId = useId();
   const { setNodeRef, isOver } = useDroppable({
-    id: `zone:${category}`,
-    data: { place: { kind: "zone", category } },
+    id: `zone:${category.id}`,
+    data: { place: { kind: "zone", category: category.id } },
   });
   return (
     <section
@@ -37,14 +38,14 @@ export default function Zone({
         className="zone-label"
         onClick={onPressLabel}
       >
-        {category}
+        {category.name}
       </button>
       {cards.map((card) => (
         <Card
-          key={card}
+          key={card.id}
           card={card}
-          selected={card === selected}
-          mark={marks[card] ?? null}
+          selected={card.id === selected}
+          mark={marks[card.id] ?? null}
           disabled={disabled}
           onPress={onPressCard}
         />

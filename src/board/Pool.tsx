@@ -1,18 +1,20 @@
 import { useDroppable } from "@dnd-kit/core";
 import { useId } from "react";
+import type { Card as CardModel } from "../../convex/model/deck";
 import type { Mark } from "./board";
 import Card from "./Card";
 import "./Pool.css";
 
 export type PoolProps = {
-  /** The names of the cards shown here, in the order shown. */
-  cards: readonly string[];
-  /** The selected card's name; null while no card is selected. */
+  /** The cards shown here, in the order shown. */
+  cards: readonly CardModel[];
+  /** The selected card's id; null while no card is selected. */
   selected: string | null;
-  /** The mark of each card that bears one, keyed by card name; a card with no entry is unmarked. */
+  /** The mark of each card that bears one, keyed by card id; a card with no entry is unmarked. */
   marks: Record<string, Mark>;
   /** Disables every card shown here. */
   disabled: boolean;
+  /** Called with the pressed card's id. */
   onPressCard: (card: string) => void;
   onPressLabel: () => void;
 };
@@ -51,10 +53,10 @@ export default function Pool({
       </button>
       {cards.map((card) => (
         <Card
-          key={card}
+          key={card.id}
           card={card}
-          selected={card === selected}
-          mark={marks[card] ?? null}
+          selected={card.id === selected}
+          mark={marks[card.id] ?? null}
           disabled={disabled}
           onPress={onPressCard}
         />

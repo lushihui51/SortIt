@@ -1,7 +1,8 @@
 import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, expect, test } from "vitest";
-import { appDeckFile } from "../deck/appDeck";
+import type { Deck } from "../../convex/model/deck";
+import { appDeck } from "../deck/appDeck";
 import Board from "./Board";
 import { shuffle } from "./board";
 
@@ -10,13 +11,13 @@ afterEach(cleanup);
 // With every draw 0, each shuffle is a fixed rotation of the order before it,
 // so every test knows the exact order of the cards after each shuffle.
 const zero = () => 0;
-const names = appDeckFile.cards.map((card) => card.name);
+const names = appDeck.cards.map((card) => card.name);
 const afterLoad = shuffle(names, zero);
 const afterChoose = shuffle(afterLoad, zero);
 
 function setUp() {
   const user = userEvent.setup();
-  render(<Board deck={appDeckFile} random={zero} />);
+  render(<Board deck={appDeck} random={zero} />);
   return user;
 }
 
@@ -32,8 +33,10 @@ function cardsIn(name: string): string[] {
     .map((button) => button.textContent ?? "");
 }
 
-const habitat = appDeckFile.dimensions[0];
-const diet = appDeckFile.dimensions[1];
+const habitat = appDeck.dimensions[0];
+const diet = appDeck.dimensions[1];
+const habitatCategories = habitat.categories.map((category) => category.name);
+const dietCategories = diet.categories.map((category) => category.name);
 
 async function chooseHabitat(user: ReturnType<typeof userEvent.setup>) {
   await user.click(screen.getByRole("button", { name: habitat.name }));
@@ -45,7 +48,7 @@ test("shows every card in the pool, the prompt and no zone before a dimension is
   expect(screen.getByText("Choose how to sort to begin")).toBeInTheDocument();
   expect(screen.getAllByRole("region")).toHaveLength(1);
   expect(screen.getByRole("group", { name: "Sort by" })).toBeInTheDocument();
-  for (const dimension of appDeckFile.dimensions) {
+  for (const dimension of appDeck.dimensions) {
     expect(
       screen.getByRole("button", { name: dimension.name }),
     ).toHaveAttribute("aria-pressed", "false");
@@ -67,7 +70,7 @@ test("shows one zone per category of the chosen dimension and removes the prompt
       .getAllByRole("region")
       .slice(1)
       .map((zone) => within(zone).getAllByRole("button")[0].textContent),
-  ).toEqual(habitat.categories);
+  ).toEqual(habitatCategories);
   expect(screen.queryByText("Choose how to sort to begin")).toBeNull();
   expect(screen.getByRole("button", { name: habitat.name })).toHaveAttribute(
     "aria-pressed",
@@ -160,7 +163,7 @@ test("Reset returns every card to the pool and keeps the dimension", async () =>
   await user.click(screen.getByRole("button", { name: "Reset" }));
   expect(cardsIn("Unsorted")).toEqual(shuffle(afterChoose, zero));
   expect(screen.queryByText("Selected")).toBeNull();
-  for (const category of habitat.categories)
+  for (const category of habitatCategories)
     expect(cardsIn(category)).toEqual([]);
   expect(screen.getByRole("button", { name: habitat.name })).toHaveAttribute(
     "aria-pressed",
@@ -182,8 +185,8 @@ test("choosing another dimension clears the board and shows its zones", async ()
       .getAllByRole("region")
       .slice(1)
       .map((zone) => within(zone).getAllByRole("button")[0].textContent),
-  ).toEqual(diet.categories);
-  for (const category of diet.categories) expect(cardsIn(category)).toEqual([]);
+  ).toEqual(dietCategories);
+  for (const category of dietCategories) expect(cardsIn(category)).toEqual([]);
   expect(screen.getByRole("button", { name: diet.name })).toHaveAttribute(
     "aria-pressed",
     "true",
@@ -211,12 +214,17 @@ test("choosing the current dimension again changes nothing", async () => {
   ]);
 });
 
-const answer = (card: string) =>
-  appDeckFile.cards.find((each) => each.name === card)!.answers[habitat.name];
+/** The name of the Habitat category that is the answer of the card named `card`. */
+const answer = (card: string) => {
+  const id = appDeck.cards.find((each) => each.name === card)!.answers[
+    habitat.id
+  ];
+  return habitat.categories.find((category) => category.id === id)!.name;
+};
 
-/** A Habitat category that is not `card`'s answer. */
+/** The name of a Habitat category that is not `card`'s answer. */
 const wrongFor = (card: string) =>
-  habitat.categories.find((category) => category !== answer(card))!;
+  habitatCategories.find((category) => category !== answer(card))!;
 
 /**
  * Places every card of the pool by click, in the pool's order, into the zone
@@ -303,7 +311,7 @@ test("an incorrect card shows its name, the icon and Incorrect, and no category"
   expect(button).toHaveTextContent(`${card} ✕Incorrect`, {
     normalizeWhitespace: false,
   });
-  for (const category of habitat.categories)
+  for (const category of habitatCategories)
     expect(button.textContent).not.toContain(category);
 });
 
@@ -384,4 +392,71 @@ test("choosing another dimension removes every mark and the score", async () => 
   expect(document.querySelector("[data-mark]")).toBeNull();
   expect(cardsIn("Unsorted")).toEqual(shuffle(afterChoose, zero));
   expect(screen.queryByText(/ correct$/)).toBeNull();
+});
+
+// Every id differs from its name, so a dimension, zone or card that showed its
+// id, or a board keyed by names, fails this test.
+const numbered: Deck = {
+  id: "deck-1",
+  name: "Animals",
+  dimensions: [
+    {
+      id: "dimension-1",
+      name: "Habitat",
+      categories: [
+        { id: "category-1", name: "Ocean" },
+        { id: "category-2", name: "Forest" },
+      ],
+    },
+    {
+      id: "dimension-2",
+      name: "Diet",
+      categories: [
+        { id: "category-3", name: "Herbivore" },
+        { id: "category-4", name: "Carnivore" },
+      ],
+    },
+  ],
+  cards: [
+    {
+      id: "card-1",
+      name: "Shark",
+      answers: { "dimension-1": "category-1", "dimension-2": "category-4" },
+    },
+    {
+      id: "card-2",
+      name: "Deer",
+      answers: { "dimension-1": "category-2", "dimension-2": "category-3" },
+    },
+  ],
+};
+
+test("shows each dimension, zone and card by its name for a deck whose ids differ from its names", async () => {
+  const user = userEvent.setup();
+  render(<Board deck={numbered} random={zero} />);
+  expect(
+    within(screen.getByRole("group", { name: "Sort by" }))
+      .getAllByRole("button")
+      .map((button) => button.textContent),
+  ).toEqual(["Habitat", "Diet"]);
+  expect(cardsIn("Unsorted")).toEqual(["Deer", "Shark"]);
+  await user.click(screen.getByRole("button", { name: "Habitat" }));
+  expect(
+    screen
+      .getAllByRole("region")
+      .slice(1)
+      .map((zone) => within(zone).getAllByRole("button")[0].textContent),
+  ).toEqual(["Ocean", "Forest"]);
+  await user.click(screen.getByRole("button", { name: "Shark" }));
+  await user.click(screen.getByRole("button", { name: "Ocean" }));
+  await user.click(screen.getByRole("button", { name: "Deer" }));
+  await user.click(screen.getByRole("button", { name: "Ocean" }));
+  expect(cardsIn("Ocean")).toEqual(["Shark", "Deer"]);
+  await user.click(screen.getByRole("button", { name: "Check" }));
+  for (const name of ["Shark Correct", "Deer Incorrect"])
+    expect(
+      within(region("Ocean")).getByRole("button", { name }),
+    ).toBeInTheDocument();
+  expect(screen.getByText("1 of 2 correct")).toBeInTheDocument();
+  expect(screen.queryByText(/(dimension|category|card)-\d/)).toBeNull();
 });
