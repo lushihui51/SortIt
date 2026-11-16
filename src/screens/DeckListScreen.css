@@ -17,12 +17,24 @@
   min-height: var(--account-button-size);
 }
 
-.deck-list {
+/* The line and the list, one column of the list's width. */
+.deck-list-column {
   display: flex;
   flex-direction: column;
   gap: var(--gap);
   width: 100%;
   max-width: var(--deck-list-width);
+}
+
+.deck-list-line {
+  margin: 0;
+  color: var(--color-label);
+}
+
+.deck-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
   margin: 0;
   padding: 0;
   list-style: none;

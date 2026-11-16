@@ -347,7 +347,7 @@ export default function DeckListScreen(): ReactElement | null;
 
 **Status**
 
-- [ ]
+- [x]
 
 **Goal**
 
@@ -450,7 +450,15 @@ back?: ReactNode;
 
 **Debrief**
 
-None.
+- `npx vitest run src/screens src/routes src/board/Board.test.tsx --reporter=verbose` passed the eight tests of src/screens/DeckScreen.test.tsx, the two new tests of src/screens/DeckListScreen.test.tsx, the two new tests of src/routes/AppRoutes.test.tsx and `shows what it is given as back at the start of the bar` in src/board/Board.test.tsx, each by the name the Done when gives.
+- `npm test`: 19 files, 176 tests passed. `npm run typecheck` exited with status 0. `npm run build` exited with status 0, and `cmp dist/index.html dist/404.html` printed nothing.
+- `grep -Fx` found each of the two rows of the Details as a line of docs/vocabulary.md, the Board row after Reset's and the List row as the table's last row.
+- The test `replaces the address with the deck's own when the name in it differs` also opens a deck's own address, and one of the name "Biología" percent-encoded, and asserts no replacement for either. The test `replaces the address with / ...` runs the segments `Animals`, a code one digit short and a code in capitals, signed in and signed out, and asserts that `openSignIn` is never called.
+- Each of these trial breaks of the code failed the test named, and passed again once restored: no deck from the list while the deck's query loads, `shows the board of a deck the list holds ...`; the line never reset, `the line is gone ...`; no check of the segment in `AppRoutes`, `replaces the address with / ...`; the whole address compared with the segment, `replaces the address with the deck's own ...`.
+- T1's test `any other path is replaced by /` no longer lists a deck's address, now a route; it lists `/decks/Biology-<code>/more` and `/nowhere`.
+- A headless Chromium against `npm run dev`, signed out, showed at `/decks/Animals-<code>` the dimmed board of the app's own deck with Clerk's form over it and no arrow, and at `/decks/Animals` the board with no form. Every check signed in, the arrow's look against drawing 1 among them, is the engineer's.
+- No departure from guidance. Choices of mine: the line and the `<ul>` stand in one column, `.deck-list-column`, of the list's width with the gap between two decks, which T5's field can join; `DeckScreen` renders the board through a component of its own file, `DeckBoard`, since `useDeckBoard` needs a deck and `DeckScreen` may have none; the provider takes `/decks/` for the list as well, through `matchPath`.
+- Read the two effects of `DeckScreen` in src/screens/DeckScreen.tsx: the deck's own query giving null calls `show()` and replaces the address with `/decks` even while the list still holds the deck. Read `AppRoutes` in src/routes/AppRoutes.tsx: `Navigate` stands inside `DeckNotOpenedProvider`, so the provider stays mounted when a segment with no code is replaced.
 
 ### T5 — "New deck" field and its refusals
 

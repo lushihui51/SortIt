@@ -231,6 +231,24 @@ test("shows what it is given as account at the end of the bar", () => {
   );
 });
 
+test("shows what it is given as back at the start of the bar", () => {
+  render(
+    <Board
+      deck={appDeck}
+      board={boardAfter(appDeck)}
+      dispatch={vi.fn()}
+      random={zero}
+      back={<a href="/decks">Probe</a>}
+    />,
+  );
+  const back = screen.getByRole("link", { name: "Probe" });
+  const bar = back.parentElement!;
+  expect(bar.firstElementChild).toBe(back);
+  expect(back.nextElementSibling).toBe(
+    screen.getByRole("group", { name: "Sort by" }),
+  );
+});
+
 test("pressing a dimension dispatches chooseDimension with its id", async () => {
   const { user, dispatch } = setUp(numbered, boardAfter(numbered));
   await user.click(screen.getByRole("button", { name: "Diet" }));

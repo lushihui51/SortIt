@@ -47,6 +47,8 @@ export type BoardProps = {
   random?: RandomSource;
   /** Shown at the end of the bar, after the score. */
   account?: ReactNode;
+  /** Shown at the start of the bar, before "Sort by". */
+  back?: ReactNode;
 };
 
 /**
@@ -61,6 +63,7 @@ export default function Board({
   dispatch,
   random = Math.random,
   account,
+  back,
 }: BoardProps): ReactElement {
   const cardsById = useMemo(
     () => new Map(deck.cards.map((card) => [card.id, card])),
@@ -127,6 +130,7 @@ export default function Board({
     >
       <div className="board">
         <div className="board-bar">
+          {back}
           <DimensionPicker
             dimensions={deck.dimensions}
             chosen={board.dimension}

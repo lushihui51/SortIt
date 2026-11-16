@@ -90,7 +90,7 @@ test("the path / shows the board of the app's own deck", () => {
 
 test("any other path is replaced by /", () => {
   for (const path of [
-    "/decks/Biology-3f2b8c1e9a4d4e6f8b210c5d7e9fa1b3",
+    "/decks/Biology-3f2b8c1e9a4d4e6f8b210c5d7e9fa1b3/more",
     "/nowhere",
   ]) {
     renderAt(path);
@@ -119,4 +119,25 @@ test("the path /decks shows the list of decks to a signed-in learner", () => {
   expect(screen.getByRole("button", { name: "Account" })).toBeInTheDocument();
   expect(screen.queryByText("Choose how to sort to begin")).toBeNull();
   expect(screen.getByLabelText("path")).toHaveTextContent(/^\/decks$/);
+});
+
+test("the board of the app's own deck shows the arrow to a signed-in learner", () => {
+  learner.signedIn = true;
+  renderAt("/");
+  const back = screen.getByRole("link", { name: "Back to the list of decks" });
+  expect(back).toHaveAttribute("href", "/decks");
+  expect(back.nextElementSibling).toBe(
+    screen.getByRole("group", { name: "Sort by" }),
+  );
+  expect(screen.getByText("Shark")).toBeInTheDocument();
+});
+
+test("the board of the app's own deck shows no arrow to a learner who is not signed in", () => {
+  renderAt("/");
+  expect(screen.getByText("Shark")).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Sign in" })).toBeInTheDocument();
+  expect(
+    screen.queryByRole("link", { name: "Back to the list of decks" }),
+  ).toBeNull();
+  expect(screen.queryAllByRole("link")).toHaveLength(0);
 });
