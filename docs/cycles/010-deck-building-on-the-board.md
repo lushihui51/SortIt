@@ -147,7 +147,7 @@ dispatch: (action: DeckBoardAction, deck?: Deck) => void;
 
 **Status**
 
-- [ ]
+- [x]
 
 **Goal**
 
@@ -213,7 +213,12 @@ export function saveAnswersQuestion(count: number, dimension: string): string;
 
 **Debrief**
 
-None.
+- `npx vitest run src/words --reporter=verbose` shows ✓ for the six tests of src/words/deleteQuestion.test.ts named in Done when, and ✓ for the three tests of a deck's question, whose bodies and names are unchanged; only the file's imports changed above them. The category tests build their decks with `deckAnswering`, in which every card also holds Water's id as its answer under a second dimension, Diet, so a count that read answers under any dimension but the category's own would fail. The no-card case runs both a deck whose cards have other answers and a deck with no card. The dimension test of several categories also runs a dimension of 0 categories.
+- The same run shows ✓ for `several cards read: Change the answers of N cards for the dimension "<Dimension>"?` and `one card reads: Change the answers of 1 card for the dimension "<Dimension>"?` in src/words/saveAnswersQuestion.test.ts.
+- `npm run typecheck` exits with status 0 and prints nothing beyond its command line.
+- `npm test`: 24 test files passed, 223 tests passed.
+- No departure from guidance; the Details hold no guidance for this task.
+- Nothing in the code needs reading beyond the Done-when tests; each function is a few lines in src/words/deleteQuestion.ts and src/words/saveAnswersQuestion.ts.
 
 ### T3 — Fields that make cards, dimensions and categories
 
