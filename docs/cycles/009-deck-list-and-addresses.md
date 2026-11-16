@@ -40,7 +40,7 @@ Judgement: The engineer runs `npx convex dev` and `npm run dev`, signs in, and p
 
 **Status**
 
-- [ ]
+- [x]
 
 **Goal**
 
@@ -106,7 +106,13 @@ export function deckIdOf(segment: string): string | null;
 
 **Debrief**
 
-None.
+- `npx vitest run src/routes --reporter=verbose` passed the four tests of src/routes/deckAddress.test.ts, each by the name the Done when gives.
+- The same run passed the two tests of src/routes/AppRoutes.test.tsx, `the path / shows the board of the app's own deck` and `any other path is replaced by /`; the second renders `/decks`, a deck's address and `/nowhere`, and asserts the path `/` reached by a REPLACE, not a push.
+- `npm test`: 14 files, 136 tests passed. `npm run typecheck` exited with status 0.
+- `npm run build` exited with status 0, and `cmp dist/index.html dist/404.html` printed nothing and exited with status 0. The build printed Vite's warning that a chunk is larger than 500 kB, which fails nothing.
+- `npm install react-router` installed 8.5.1, used only through `BrowserRouter`, `MemoryRouter`, `Routes`, `Route` and `Navigate`. The `build` script copies the file with `cp dist/index.html dist/404.html` after `vite build`; the workflow's check and deploy jobs both run `npm run build`, so the deployed build carries 404.html.
+- No departure from guidance.
+- Read `deckAddress` in src/routes/deckAddress.ts: it applies the rule of runs to the whole name, so a name that begins or ends in a character other than a letter or a digit gives an address with a hyphen at the start, or two hyphens before the code, as `Year 9: cells & tissues!` gives `/decks/Year-9-cells-tissues--<code>`.
 
 ### T2 — Hook that sends an act on the learner's decks
 
