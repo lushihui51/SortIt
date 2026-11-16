@@ -6,7 +6,13 @@ import {
   type Announcements,
   type DragEndEvent,
 } from "@dnd-kit/core";
-import { useMemo, useRef, useState, type ReactElement } from "react";
+import {
+  useMemo,
+  useRef,
+  useState,
+  type ReactElement,
+  type ReactNode,
+} from "react";
 import type { Card, Deck } from "../../convex/model/deck";
 import {
   markOf,
@@ -39,6 +45,8 @@ export type BoardProps = {
   dispatch: (action: DeckBoardAction) => void;
   /** Draws the shuffle of Reset, of Retry and of a change of dimension. */
   random?: RandomSource;
+  /** Shown at the end of the bar, after the score. */
+  account?: ReactNode;
 };
 
 /**
@@ -52,6 +60,7 @@ export default function Board({
   board,
   dispatch,
   random = Math.random,
+  account,
 }: BoardProps): ReactElement {
   const cardsById = useMemo(
     () => new Map(deck.cards.map((card) => [card.id, card])),
@@ -160,6 +169,7 @@ export default function Board({
               </p>
             )}
           </div>
+          {account}
         </div>
         <Pool
           cards={cardsIn({ kind: "pool" })}

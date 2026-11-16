@@ -1,0 +1,20 @@
+/* "Sign in" looks like the bar's Reset, standing at the bar's end. */
+.account-sign-in {
+  padding: var(--control-padding-block) var(--control-padding-inline);
+  background: var(--color-control);
+  border: var(--border-width) solid var(--color-control-border);
+  border-radius: var(--card-radius);
+  cursor: pointer;
+}
+
+.account-sign-in:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-focus);
+  outline-offset: var(--focus-ring-offset);
+}
+
+@media (max-width: 720px) {
+  .account-sign-in {
+    min-width: var(--hit-size);
+    min-height: var(--hit-size);
+  }
+}

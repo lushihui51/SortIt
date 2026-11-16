@@ -28,7 +28,7 @@ Judgement: The engineer runs `npx convex dev` and `npm run dev` against a Clerk 
 
 **Status**
 
-- [ ]
+- [x]
 
 **Goal**
 
@@ -127,7 +127,17 @@ account?: ReactNode;
 
 **Debrief**
 
-None.
+- `npx vitest run src/account/Account.test.tsx src/board/Board.test.tsx --reporter=verbose` printed ✓ for `shows nothing while Clerk is loading`, `shows Sign in while the learner is signed out`, `pressing Sign in opens Clerk's sign-in form through openSignIn` and `openSignIn is given no withSignUp`; the third asserts the one call is `openSignIn({ oauthFlow: "popup" })`.
+- The same run printed ✓ for `shows what it is given as account at the end of the bar` in src/board/Board.test.tsx, which renders the score and checks that the account is the bar's last child, right after the element holding the score.
+- `npm test` printed `Test Files  12 passed (12)` and `Tests  121 passed (121)`.
+- `git grep --untracked -l "@clerk/react" -- src` printed `src/App.tsx`, `src/account/Account.test.tsx` and `src/account/Account.tsx`.
+- `git grep --untracked -l -E "signInUrl|<SignIn" -- src` printed nothing and exited with status 1.
+- `grep -c -F -x` with the two rows of the Details as patterns counted 2 lines of docs/vocabulary.md; they are its last two rows.
+- `npm run typecheck` exited with status 0.
+- The tests mock `@clerk/react`, so the builder never saw Clerk's modal. Check these in a browser: the form centred over the dimmed board, the board unusable and unscrollable behind it, a press on the dimmed board closing it, "Secured by Clerk" under it, and the address and the history unchanged, with no reload, through signing in and making an account. Before the run, `.env.local` lacks `VITE_CLERK_PUBLISHABLE_KEY` (it names `CONVEX_DEPLOYMENT`, `VITE_CONVEX_URL` and `VITE_CONVEX_SITE_URL`), and without it `ClerkProvider` throws on the first render.
+- `npm run build` succeeded, and the bundle names `@clerk/clerk-js` and `@clerk/ui` only in the CDN addresses they load from when the page runs.
+- No departure from guidance. One choice the file left open: `stayOnPage` passes `window.history.state` as the state of the replaced entry rather than `null`, so it keeps whatever state the current entry holds, such as a router's.
+- Read `stayOnPage` and `App` in src/App.tsx, where Clerk's moves are given to `ClerkProvider`; this is the code the browser check of the unchanged address tests.
 
 ### T2 — Account button, its menu and "Sign out"
 

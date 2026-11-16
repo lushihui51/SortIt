@@ -212,6 +212,25 @@ test("shows each dimension, zone and card by its name for a deck whose ids diffe
   expect(screen.queryByText(/(dimension|category|card)-\d/)).toBeNull();
 });
 
+test("shows what it is given as account at the end of the bar", () => {
+  render(
+    <Board
+      deck={appDeck}
+      board={boardAfter(appDeck, ...mixed, toggleCheck)}
+      dispatch={vi.fn()}
+      random={zero}
+      account={<button type="button">Probe</button>}
+    />,
+  );
+  const account = screen.getByRole("button", { name: "Probe" });
+  const bar = account.parentElement!;
+  expect(bar).toContainElement(screen.getByRole("button", { name: "Reset" }));
+  expect(bar.lastElementChild).toBe(account);
+  expect(account.previousElementSibling).toContainElement(
+    screen.getByText("2 of 3 correct"),
+  );
+});
+
 test("pressing a dimension dispatches chooseDimension with its id", async () => {
   const { user, dispatch } = setUp(numbered, boardAfter(numbered));
   await user.click(screen.getByRole("button", { name: "Diet" }));

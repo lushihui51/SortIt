@@ -1,4 +1,5 @@
 import type { ReactElement } from "react";
+import Account from "../account/Account";
 import Board from "../board/Board";
 import { useDeckBoard } from "../board/BoardsProvider";
 import { appDeck } from "../deck/appDeck";
@@ -7,5 +8,12 @@ import { appDeck } from "../deck/appDeck";
 export default function AppDeckScreen(): ReactElement | null {
   const { board, dispatch } = useDeckBoard(appDeck);
   if (board === null) return null;
-  return <Board deck={appDeck} board={board} dispatch={dispatch} />;
+  return (
+    <Board
+      deck={appDeck}
+      board={board}
+      dispatch={dispatch}
+      account={<Account />}
+    />
+  );
 }

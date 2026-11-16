@@ -20,3 +20,5 @@ This file gives the words for every concept the app shows, every act on it and e
 | Deck | Error shown in place of the board when a card of the app's own deck lacks exactly one answer in a dimension | "This deck cannot be shown: "<Card>" needs exactly one answer for <dimension>." | Not shown yet | `DeckFault` of kind `answer` and `findFirstFault` in src/deck/findFirstFault.ts |
 | Editing | ⓘ, which opens the panel of a card | "ⓘ" | The upper right corner of each card | the ⓘ button in `Card` in src/board/Card.tsx |
 | Editing | Panel of a card | the name of what it opens as its heading, as "Orca"; "Close", spoken | A panel over the board | `Panel` in src/ui/Panel.tsx |
+| Account | Sign in | "Sign in" | A button at the top of the board while signed out | the Sign in button in `Account` in src/account/Account.tsx |
+| Account | Sign-in form, for signing in or making an account | Clerk's own words for signing in and making an account, as "Continue with Google"; "Secured by"; Clerk's logo | A form centred over the dimmed board while signed out | Clerk's modal, opened by `openSignIn` in `Account` in src/account/Account.tsx |
