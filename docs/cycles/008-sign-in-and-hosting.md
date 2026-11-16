@@ -215,7 +215,7 @@ A signed-in learner sees, in place of "Sign in", their profile picture or the fi
 
 **Status**
 
-- [ ]
+- [x]
 
 **Goal**
 
@@ -255,4 +255,10 @@ The app builds for the root of a domain, and the one workflow's deploy job, afte
 
 **Debrief**
 
-None.
+- After `npm run build`, `grep -c "/SortIt/" dist/index.html` printed `0` and `grep -c -E "(src|href)=\"/assets/" dist/index.html` printed `2`, the script `/assets/index-DsFmbL7n.js` and the stylesheet `/assets/index-B_UfM0D8.css`.
+- `grep -c "upload-pages-artifact" .github/workflows/check-and-deploy.yml` printed `1`. `grep -n` put the deploy job's heading at line 25, `npx convex deploy --cmd 'npm run build'` at line 47 and `upload-pages-artifact` at line 51.
+- The two `grep -c` lines for `CONVEX_DEPLOY_KEY` and `VITE_CLERK_PUBLISHABLE_KEY` each printed `1` under GNU grep 3.12, at lines 49 and 50, both in the `env` of the step that runs `npx convex deploy`. The builder's shell wraps `grep` in ugrep, which reads the `$` in `${{` as an end-of-line anchor and printed `0` for both. So every grep of this Debrief ran as /usr/bin/grep.
+- `npm test` printed `Test Files  12 passed (12)` and `Tests  130 passed (130)`, and `npm run typecheck` exited with status 0.
+- The builder could not run the workflow. The evidence is the file and the build's paths above. The cycle's Judgement needs a browser, Clerk and the engineer's accounts, so it is the engineer's to check. The builder's evidence for it is the tests named by T1 and T2, which pass in the run above.
+- No departure from guidance.
+- Read the deploy job in .github/workflows/check-and-deploy.yml, the one part of this task that runs only on main.
