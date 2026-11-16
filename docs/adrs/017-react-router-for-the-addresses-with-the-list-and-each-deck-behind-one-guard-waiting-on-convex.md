@@ -10,7 +10,7 @@ PDR 015 gives the list of decks and each deck's board an address of its own, wit
 
 PDR 015 has the list's address or a deck's address, opened by a learner who has not signed in, show the board of the app's own deck with the sign-in form open, open what it names once they sign in, and leave them at the app's first address if they close the form. A deck's address that a signed-in learner cannot open brings them to their list of decks, with a line saying the deck cannot be opened.
 
-PDR 013 opens the sign-in in a form over the screen the learner is on, and ADR 008 renders that form in a popover of the app's own.
+PDR 013 opens the sign-in in a form over the screen the learner is on, and ADR 008 shows that form through Clerk's own modal, which writes nothing to the address. ADR 019 has `Account`, the component that opens the form, report through `onSignInClose` only a close by a learner who has not signed in.
 
 ADR 010 serves the app at the root of a domain on GitHub Pages, which answers a path it holds no file for with the site's 404.html.
 
@@ -32,7 +32,7 @@ We will make a deck's address from its name, with each run of characters other t
 
 We will have a deck's screen open the deck by the code alone, through a Convex query that returns nothing when the owner helper refuses or no deck holds that id, and replace the address with the deck's own whenever the name in it differs.
 
-We will render the routes of the list and of a deck inside one component, `SignedInOnly`, which reads `useConvexAuth()`: while it reports loading, it renders nothing; while the learner is not authenticated, it renders the screen of the app's own deck, as `/` does, with the sign-in popover open and the address left as it is, and replaces the address with `/` when the learner closes the popover; once the learner is authenticated, it renders the route's screen.
+We will render the routes of the list and of a deck inside one component, `SignedInOnly`, which reads `useConvexAuth()`: while it reports loading, it renders nothing; while the learner is not authenticated, it renders the screen of the app's own deck, as `/` does, with the sign-in form open and the address left as it is, and replaces the address with `/` when `Account` reports that the learner closed the form without signing in; once the learner is authenticated, it renders the route's screen.
 
 We will have the build copy index.html to 404.html, so that GitHub Pages serves the app at every path.
 
