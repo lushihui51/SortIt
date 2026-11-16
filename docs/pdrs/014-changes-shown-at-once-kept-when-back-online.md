@@ -1,4 +1,4 @@
-# PDR 014: Changes shown at once and kept when the connection returns, with a change that no longer fits named and left out
+# PDR 014: Changes shown at once, kept when back online
 
 ## Status
 

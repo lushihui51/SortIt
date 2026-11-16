@@ -1,4 +1,4 @@
-# PDR 011: Making by a field where it goes, changing by its panel, and deleting after a question
+# PDR 011: Fields for making, panels for changing and deleting
 
 ## Status
 

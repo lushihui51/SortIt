@@ -10,8 +10,8 @@ Judgement: The engineer opens the app at `npm run dev` in a desktop browser and 
 
 ## Records
 
-- ADR 007: One deck shape keyed by ids made on the device, with the app's own deck bundled as JSON keyed by name
-- ADR 018: Vitest in four kinds, unit, component in jsdom, Convex functions under convex-test and the record citation guard, with dragging checked by hand
+- ADR 007: One shape keyed by ids for every deck
+- ADR 018: Vitest in four kinds, dragging checked by hand
 
 ## Tasks
 

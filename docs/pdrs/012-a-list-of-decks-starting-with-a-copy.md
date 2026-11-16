@@ -1,4 +1,4 @@
-# PDR 012: A list of named decks on its own screen, starting with a copy of the app's own deck
+# PDR 012: A list of decks starting with a copy
 
 ## Status
 

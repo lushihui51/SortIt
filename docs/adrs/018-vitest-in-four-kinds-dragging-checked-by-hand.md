@@ -1,4 +1,4 @@
-# ADR 018: Vitest in four kinds, unit, component in jsdom, Convex functions under convex-test and the record citation guard, with dragging checked by hand
+# ADR 018: Vitest in four kinds, dragging checked by hand
 
 ## Status
 

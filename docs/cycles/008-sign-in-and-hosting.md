@@ -14,13 +14,13 @@ Judgement: The engineer runs `npx convex dev` and `npm run dev` against a Clerk 
 
 ## Records
 
-- PDR 013: Accounts keeping a learner's decks on every device, with the app's own deck open to all
-- ADR 008: Clerk for signing the learner in, with its own modal as the sign-in form
-- ADR 009: Convex for keeping the learners' decks, with one helper checking each deck's owner
-- ADR 010: GitHub Pages at the engineer's own domain, with Convex deployed by the same workflow
-- ADR 015: One map of boards by deck id above the routes, each fitted to its deck by a pure reducer
-- ADR 016: The board as a view of a deck, its board and its acts, with Convex and Clerk kept out of it
-- ADR 018: Vitest in four kinds, unit, component in jsdom, Convex functions under convex-test and the record citation guard, with dragging checked by hand
+- PDR 013: Accounts keeping a learner's decks on every device
+- ADR 008: Clerk and its own modal for signing in
+- ADR 009: Convex and one owner helper for learners' decks
+- ADR 010: GitHub Pages at the engineer's domain, with Convex
+- ADR 015: Boards by deck id in one pure reducer
+- ADR 016: A board component free of Convex and Clerk
+- ADR 018: Vitest in four kinds, dragging checked by hand
 
 ## Tasks
 

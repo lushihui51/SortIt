@@ -1,4 +1,4 @@
-# PDR 013: Accounts keeping a learner's decks on every device, with the app's own deck open to all
+# PDR 013: Accounts keeping a learner's decks on every device
 
 ## Status
 

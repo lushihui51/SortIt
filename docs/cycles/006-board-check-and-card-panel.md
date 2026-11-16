@@ -16,13 +16,13 @@ Judgement: The engineer opens the app at `npm run dev` in the desktop versions o
 
 - PDR 001: Current desktop browsers and portrait phones as the served devices
 - PDR 004: Reset and a change of dimension clearing the board at once
-- PDR 007: Check as a switch for live marks, with a score of the cards judged and Retry
-- PDR 008: One board with cards dragged at any time, each opening in a panel
-- PDR 013: Accounts keeping a learner's decks on every device, with the app's own deck open to all
-- ADR 014: @dnd-kit/core for dragging alone, with each card a draggable holding one button
-- ADR 015: One map of boards by deck id above the routes, each fitted to its deck by a pure reducer
-- ADR 016: The board as a view of a deck, its board and its acts, with Convex and Clerk kept out of it
-- ADR 018: Vitest in four kinds, unit, component in jsdom, Convex functions under convex-test and the record citation guard, with dragging checked by hand
+- PDR 007: Check as a switch for live marks
+- PDR 008: Cards moved by dragging alone, opening in panels
+- PDR 013: Accounts keeping a learner's decks on every device
+- ADR 014: @dnd-kit/core for dragging alone, cards holding one button
+- ADR 015: Boards by deck id in one pure reducer
+- ADR 016: A board component free of Convex and Clerk
+- ADR 018: Vitest in four kinds, dragging checked by hand
 
 ## Tasks
 

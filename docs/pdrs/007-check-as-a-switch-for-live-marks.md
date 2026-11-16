@@ -1,4 +1,4 @@
-# PDR 007: Check as a switch for live marks, with a score of the cards judged and Retry
+# PDR 007: Check as a switch for live marks
 
 ## Status
 

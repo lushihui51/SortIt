@@ -1,4 +1,4 @@
-# ADR 010: GitHub Pages at the engineer's own domain, with Convex deployed by the same workflow
+# ADR 010: GitHub Pages at the engineer's domain, with Convex
 
 ## Status
 

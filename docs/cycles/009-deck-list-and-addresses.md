@@ -15,24 +15,24 @@ Judgement: The engineer runs `npx convex dev` and `npm run dev`, signs in, and p
 ## Records
 
 - PDR 001: Current desktop browsers and portrait phones as the served devices
-- PDR 008: One board with cards dragged at any time, each opening in a panel
-- PDR 009: Rules each deck must meet, with an error for the app's own deck and a refused name for a learner's
-- PDR 011: Making by a field where it goes, changing by its panel, and deleting after a question
-- PDR 012: A list of named decks on its own screen, starting with a copy of the app's own deck
-- PDR 013: Accounts keeping a learner's decks on every device, with the app's own deck open to all
-- PDR 014: Changes shown at once and kept when the connection returns, with a change that no longer fits named and left out
-- PDR 015: An address for the list and each deck, opening sign-in or the list when the deck cannot be opened
-- ADR 007: One deck shape keyed by ids made on the device, with the app's own deck bundled as JSON keyed by name
-- ADR 008: Clerk for signing the learner in, with its own modal as the sign-in form
-- ADR 009: Convex for keeping the learners' decks, with one helper checking each deck's owner
-- ADR 011: One Convex document per deck, changed by one pure act run on the device and in the mutation
-- ADR 012: Late changes refused as the mutation's value, Save answers kept in part, and one hook naming what was not kept
-- ADR 014: @dnd-kit/core for dragging alone, with each card a draggable holding one button
-- ADR 015: One map of boards by deck id above the routes, each fitted to its deck by a pure reducer
-- ADR 016: The board as a view of a deck, its board and its acts, with Convex and Clerk kept out of it
-- ADR 017: React Router for the addresses, with the list and each deck behind one guard waiting on Convex
-- ADR 018: Vitest in four kinds, unit, component in jsdom, Convex functions under convex-test and the record citation guard, with dragging checked by hand
-- ADR 019: The close of Clerk's modal observed through a container of the app's own, and reported only once Clerk reports the learner signed out
+- PDR 008: Cards moved by dragging alone, opening in panels
+- PDR 009: Deck rules with an error or a refusal
+- PDR 011: Fields for making, panels for changing and deleting
+- PDR 012: A list of decks starting with a copy
+- PDR 013: Accounts keeping a learner's decks on every device
+- PDR 014: Changes shown at once, kept when back online
+- PDR 015: An address for the list and each deck
+- ADR 007: One shape keyed by ids for every deck
+- ADR 008: Clerk and its own modal for signing in
+- ADR 009: Convex and one owner helper for learners' decks
+- ADR 011: One document per deck, changed by pure acts
+- ADR 012: Refusals as mutation values, named by one hook
+- ADR 014: @dnd-kit/core for dragging alone, cards holding one button
+- ADR 015: Boards by deck id in one pure reducer
+- ADR 016: A board component free of Convex and Clerk
+- ADR 017: React Router and one guard for the addresses
+- ADR 018: Vitest in four kinds, dragging checked by hand
+- ADR 019: Clerk's modal close observed through the app's container
 
 ## Tasks
 

@@ -1,4 +1,4 @@
-# ADR 009: Convex for keeping the learners' decks, with one helper checking each deck's owner
+# ADR 009: Convex and one owner helper for learners' decks
 
 ## Status
 

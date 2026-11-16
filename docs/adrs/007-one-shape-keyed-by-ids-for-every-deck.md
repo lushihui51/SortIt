@@ -1,4 +1,4 @@
-# ADR 007: One deck shape keyed by ids made on the device, with the app's own deck bundled as JSON keyed by name
+# ADR 007: One shape keyed by ids for every deck
 
 ## Status
 

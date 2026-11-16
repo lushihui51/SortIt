@@ -16,19 +16,19 @@ Judgement: The engineer runs `npx convex dev` and `npm run dev`, signs in and ma
 
 - PDR 001: Current desktop browsers and portrait phones as the served devices
 - PDR 004: Reset and a change of dimension clearing the board at once
-- PDR 007: Check as a switch for live marks, with a score of the cards judged and Retry
-- PDR 009: Rules each deck must meet, with an error for the app's own deck and a refused name for a learner's
-- PDR 010: Answers set by saving the sorted board, with a question before any answer changes
-- PDR 011: Making by a field where it goes, changing by its panel, and deleting after a question
-- PDR 014: Changes shown at once and kept when the connection returns, with a change that no longer fits named and left out
-- ADR 007: One deck shape keyed by ids made on the device, with the app's own deck bundled as JSON keyed by name
-- ADR 009: Convex for keeping the learners' decks, with one helper checking each deck's owner
-- ADR 011: One Convex document per deck, changed by one pure act run on the device and in the mutation
-- ADR 012: Late changes refused as the mutation's value, Save answers kept in part, and one hook naming what was not kept
-- ADR 014: @dnd-kit/core for dragging alone, with each card a draggable holding one button
-- ADR 015: One map of boards by deck id above the routes, each fitted to its deck by a pure reducer
-- ADR 016: The board as a view of a deck, its board and its acts, with Convex and Clerk kept out of it
-- ADR 018: Vitest in four kinds, unit, component in jsdom, Convex functions under convex-test and the record citation guard, with dragging checked by hand
+- PDR 007: Check as a switch for live marks
+- PDR 009: Deck rules with an error or a refusal
+- PDR 010: Answers set by saving the sorted board
+- PDR 011: Fields for making, panels for changing and deleting
+- PDR 014: Changes shown at once, kept when back online
+- ADR 007: One shape keyed by ids for every deck
+- ADR 009: Convex and one owner helper for learners' decks
+- ADR 011: One document per deck, changed by pure acts
+- ADR 012: Refusals as mutation values, named by one hook
+- ADR 014: @dnd-kit/core for dragging alone, cards holding one button
+- ADR 015: Boards by deck id in one pure reducer
+- ADR 016: A board component free of Convex and Clerk
+- ADR 018: Vitest in four kinds, dragging checked by hand
 
 ## Tasks
 

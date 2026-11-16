@@ -1,4 +1,4 @@
-# ADR 017: React Router for the addresses, with the list and each deck behind one guard waiting on Convex
+# ADR 017: React Router and one guard for the addresses
 
 ## Status
 

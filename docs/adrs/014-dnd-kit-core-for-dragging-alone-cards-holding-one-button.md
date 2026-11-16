@@ -1,4 +1,4 @@
-# ADR 014: @dnd-kit/core for dragging alone, with each card a draggable holding one button
+# ADR 014: @dnd-kit/core for dragging alone, cards holding one button
 
 ## Status
 

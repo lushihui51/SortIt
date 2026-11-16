@@ -1,4 +1,4 @@
-# ADR 012: Late changes refused as the mutation's value, Save answers kept in part, and one hook naming what was not kept
+# ADR 012: Refusals as mutation values, named by one hook
 
 ## Status
 

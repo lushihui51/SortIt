@@ -1,4 +1,4 @@
-# ADR 011: One Convex document per deck, changed by one pure act run on the device and in the mutation
+# ADR 011: One document per deck, changed by pure acts
 
 ## Status
 

@@ -1,4 +1,4 @@
-# ADR 019: The close of Clerk's modal observed through a container of the app's own, and reported only once Clerk reports the learner signed out
+# ADR 019: Clerk's modal close observed through the app's container
 
 ## Status
 

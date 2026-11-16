@@ -1,4 +1,4 @@
-# PDR 009: Rules each deck must meet, with an error for the app's own deck and a refused name for a learner's
+# PDR 009: Deck rules with an error or a refusal
 
 ## Status
 

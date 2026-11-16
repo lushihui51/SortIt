@@ -1,4 +1,4 @@
-# PDR 015: An address for the list and each deck, opening sign-in or the list when the deck cannot be opened
+# PDR 015: An address for the list and each deck
 
 ## Status
 

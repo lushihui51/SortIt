@@ -1,4 +1,4 @@
-# PDR 008: One board with cards dragged at any time, each opening in a panel
+# PDR 008: Cards moved by dragging alone, opening in panels
 
 ## Status
 

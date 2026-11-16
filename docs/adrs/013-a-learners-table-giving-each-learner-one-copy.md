@@ -1,4 +1,4 @@
-# ADR 013: A learners table and one mutation for giving each learner the copy of the app's own deck once
+# ADR 013: A learners table giving each learner one copy
 
 ## Status
 

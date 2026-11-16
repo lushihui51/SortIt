@@ -1,4 +1,4 @@
-# ADR 015: One map of boards by deck id above the routes, each fitted to its deck by a pure reducer
+# ADR 015: Boards by deck id in one pure reducer
 
 ## Status
 

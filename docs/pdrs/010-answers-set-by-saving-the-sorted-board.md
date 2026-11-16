@@ -1,4 +1,4 @@
-# PDR 010: Answers set by saving the sorted board, with a question before any answer changes
+# PDR 010: Answers set by saving the sorted board
 
 ## Status
 

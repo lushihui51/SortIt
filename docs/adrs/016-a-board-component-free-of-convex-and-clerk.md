@@ -1,4 +1,4 @@
-# ADR 016: The board as a view of a deck, its board and its acts, with Convex and Clerk kept out of it
+# ADR 016: A board component free of Convex and Clerk
 
 ## Status
 

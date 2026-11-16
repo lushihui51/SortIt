@@ -1,4 +1,4 @@
-# ADR 008: Clerk for signing the learner in, with its own modal as the sign-in form
+# ADR 008: Clerk and its own modal for signing in
 
 ## Status
 
