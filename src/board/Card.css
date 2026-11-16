@@ -1,8 +1,15 @@
-/* A touch that moves a card drags it instead of scrolling the page. */
+/* A touch that moves a card drags it instead of scrolling the page, and a
+   press on a card never selects its text. */
 .card {
   position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--card-gap);
   touch-action: none;
-  padding: var(--card-padding-block) var(--card-padding-inline);
+  -webkit-user-select: none;
+  user-select: none;
+  padding: var(--card-padding-block) var(--card-padding-info)
+    var(--card-padding-block) var(--card-padding-inline);
   background: var(--color-card);
   border: var(--border-width) solid var(--color-card-border);
   border-radius: var(--card-radius);
@@ -31,14 +38,33 @@
   background: var(--color-no-answer);
 }
 
-.card:focus-visible {
+/* The ⓘ sits in the card's upper right corner, in the room its padding
+   leaves; the character draws its own circle. */
+.card-info {
+  position: absolute;
+  top: var(--info-inset);
+  right: var(--info-inset);
+  display: grid;
+  place-items: center;
+  width: var(--info-size);
+  height: var(--info-size);
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--color-control);
+  color: var(--color-label);
+  font-size: var(--info-font-size);
+  line-height: 1;
+  cursor: pointer;
+}
+
+.card-info:focus-visible {
   outline: var(--focus-ring-width) solid var(--color-focus);
   outline-offset: var(--focus-ring-offset);
 }
 
-/* The dragged card passes over every other card and region. */
 .card-dragging {
-  z-index: 2;
+  z-index: var(--layer-dragging);
   cursor: grabbing;
   box-shadow: var(--shadow-dragging) var(--color-shadow-dragging);
 }

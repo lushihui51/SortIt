@@ -12,7 +12,13 @@ export type ZoneProps = PoolProps & { category: Category };
  * cards. A card dropped on it is placed in the zone, so it must be rendered
  * inside the board's `DndContext`.
  */
-export default function Zone({ category, cards, marks, disabled }: ZoneProps) {
+export default function Zone({
+  category,
+  cards,
+  marks,
+  disabled,
+  onOpen,
+}: ZoneProps) {
   const labelId = useId();
   const { setNodeRef, isOver } = useDroppable({
     id: `zone:${category.id}`,
@@ -33,6 +39,7 @@ export default function Zone({ category, cards, marks, disabled }: ZoneProps) {
           card={card}
           mark={marks[card.id] ?? null}
           disabled={disabled}
+          onOpen={onOpen}
         />
       ))}
     </section>

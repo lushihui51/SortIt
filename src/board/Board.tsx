@@ -6,7 +6,7 @@ import {
   type Announcements,
   type DragEndEvent,
 } from "@dnd-kit/core";
-import { useMemo, type ReactElement } from "react";
+import { useMemo, useRef, useState, type ReactElement } from "react";
 import type { Card, Deck } from "../../convex/model/deck";
 import {
   markOf,
@@ -20,6 +20,7 @@ import type { DeckBoardAction } from "./BoardsProvider";
 import DimensionPicker from "./DimensionPicker";
 import Pool from "./Pool";
 import Zone from "./Zone";
+import Panel from "../ui/Panel";
 import "./Board.css";
 
 // dnd-kit announces drags and describes draggables in words of its own; the
@@ -43,8 +44,8 @@ export type BoardProps = {
 /**
  * The board over `deck`: the picker, Reset, the Check switch, Retry, the
  * score, the pool and the zones of the chosen dimension, showing `board` and
- * sending every act on it to `dispatch`. It must be given `board` fitted to
- * `deck`.
+ * sending every act on it to `dispatch`, and the panel of the card whose ⓘ was
+ * pressed. It must be given `board` fitted to `deck`.
  */
 export default function Board({
   deck,
@@ -56,6 +57,10 @@ export default function Board({
     () => new Map(deck.cards.map((card) => [card.id, card])),
     [deck],
   );
+  const [open, setOpen] = useState<string | null>(null);
+  // The ⓘ that opened the panel, which takes the focus back when it closes.
+  const opener = useRef<HTMLElement | null>(null);
+  const openCard = open === null ? undefined : cardsById.get(open);
   const marks: Record<string, Mark> = {};
   for (const card of board.order) {
     const mark = markOf(board, deck, card);
@@ -83,6 +88,16 @@ export default function Board({
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
   );
+
+  function openPanel(card: string, from: HTMLElement) {
+    opener.current = from;
+    setOpen(card);
+  }
+
+  function closePanel() {
+    setOpen(null);
+    opener.current?.focus();
+  }
 
   function dragEnd(event: DragEndEvent) {
     const place = (event.over?.data.current as { place: Place } | undefined)
@@ -150,6 +165,7 @@ export default function Board({
           cards={cardsIn({ kind: "pool" })}
           marks={marks}
           disabled={disabled}
+          onOpen={openPanel}
         />
         <div className="board-zones">
           {disabled ? (
@@ -162,11 +178,13 @@ export default function Board({
                 cards={cardsIn({ kind: "zone", category: category.id })}
                 marks={marks}
                 disabled={disabled}
+                onOpen={openPanel}
               />
             ))
           )}
         </div>
       </div>
+      {openCard && <Panel heading={openCard.name} onClose={closePanel} />}
     </DndContext>
   );
 }

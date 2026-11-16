@@ -348,7 +348,7 @@ export default function AppDeckScreen(): ReactElement | null;
 
 **Status**
 
-- [ ]
+- [x]
 
 **Goal**
 
@@ -440,4 +440,17 @@ export default function Panel(props: PanelProps): ReactElement;
 
 **Debrief**
 
-None.
+- Evidence, the first criterion: `npx vitest run src/ui src/board --reporter=verbose` lists `Panel shows its heading, names its dialog by it, holds its children and calls onClose from Close` in src/ui/Panel.test.tsx with ✓.
+- Evidence, the second criterion: the same run lists each of the 4 named tests of src/board/Board.test.tsx with ✓.
+- Evidence, the third criterion: the same run lists with ✓ the 15 tests of T2's Done when that src/board/Board.test.tsx keeps, under their names, `no card's button is disabled, before or after a dimension is chosen` removed, and all 27 tests of src/board/board.test.ts; the 5 tests of src/board/BoardsProvider.test.tsx pass too. `npm test` prints `Test Files  8 passed (8)` and `Tests  67 passed (67)`.
+- Evidence, the fourth criterion: `grep -Fxc` finds each of the two rows of the Details, taken from this file, once as a line of docs/vocabulary.md, after the table's last row before this task.
+- Evidence, the fifth criterion: `npm run build` exits 0; `npm run typecheck` exits 0.
+- Seen beyond the Done when, in headless Chromium: at 1440×900, the panel's box measures 420px wide at x 510 and y 330 with Close 36px square at its right end, as drawing 1 shows; the panel and its scrim lie at z-index 3 and a dragged card at 2; a press on the scrim leaves the panel open and the focus on Close; Escape and Close each close it and return the focus to the ⓘ. A mouse press on an ⓘ moved 40px starts no drag, and a card dragged by its name lands in a zone. At 390×844 with touch, the panel spans the screen less 12px on each side, Close is 44px square, a card is 44px high, a touch drag starting on an ⓘ starts no drag, and one starting on the name lands the card in a zone. This does not replace the engineer's checks by hand (ADR 018).
+- The ⓘ's font size is 13px, one em for the 13px box. The page's fonts hold no `ⓘ`, so each system draws it in a fallback font; on this Linux machine that font draws an oval 8px wide and 11px high. How it fills the box on the served systems is for the engineer to see.
+- Departure: the focus returns to the ⓘ from `Board`, which keeps the ⓘ pressed in a ref and focuses it in its `onClose`, rather than from `Panel`. `Panel`'s props take no element to return to, and Safari and Firefox on macOS do not focus a button on a click, so `Panel` cannot recover the ⓘ from the focus it found on mounting.
+- Departure: the tests hold more than the Done when names. src/ui/Panel.test.tsx holds one more test, `Panel takes the focus to Close, keeps Tab inside it and calls onClose on Escape`, for the guidance on Escape and focus; `Close closes the card's panel` also closes the panel by Escape and asserts the focus is back on the ⓘ each time; the ⓘ test also asserts the focus on Close and, on a deck whose ids differ from its names, a heading that shows the name.
+- Departure: the stacking order of a dragged card and of the panel are two custom properties side by side in src/index.css, `--layer-dragging: 2` and `--layer-panel: 3`, the card's `z-index: 2` in src/board/Card.css moved there.
+- Departure: a value already a custom property is reused rather than added again: the ⓘ's white is `--color-control` and its character's colour `--color-label`; the panel's background, border and radius are the regions' properties; Close's border, background and radius are the controls'. The panel's shadow and the scrim's colour, equal in value to the dragged card's shadow, are properties of their own, `--shadow-panel`, `--color-shadow-panel` and `--color-scrim`.
+- Departure: a press on the scrim has its default prevented, so it does not take the focus off the panel.
+- `Pool` and `Zone` take a new prop, `onOpen: (card: string, opener: HTMLElement) => void`, which each passes to every `Card`.
+- Read the keydown effect of `Panel` in src/ui/Panel.tsx: one listener on the document while the panel is mounted calls `onClose` on Escape and wraps Tab and Shift+Tab, from the panel's last or first control or from outside it, to the panel's other end. Read the ⓘ in `Card` in src/board/Card.tsx: its `onPointerDown` stops the event before the card's drag listeners, the whole of what keeps a press on it from starting a drag.

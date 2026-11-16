@@ -18,3 +18,5 @@ This file gives the words for every concept the app shows, every act on it and e
 | Verdict | Score, correct cards over the cards judged | "N of N correct" | Beside the buttons while Check is on and a card lies in a zone | `score` in src/board/board.ts; the score in `Board` in src/board/Board.tsx |
 | Verdict | Retry, which returns only the incorrect cards to the pool | "Retry" | A button beside Check while Check is on and a card in a zone is incorrect | the `retry` action of `BoardAction` in src/board/board.ts; the Retry button in `Board` in src/board/Board.tsx |
 | Deck | Error shown in place of the board when a card of the app's own deck lacks exactly one answer in a dimension | "This deck cannot be shown: "<Card>" needs exactly one answer for <dimension>." | Not shown yet | `DeckFault` of kind `answer` and `findFirstFault` in src/deck/findFirstFault.ts |
+| Editing | ⓘ, which opens the panel of a card | "ⓘ" | The upper right corner of each card | the ⓘ button in `Card` in src/board/Card.tsx |
+| Editing | Panel of a card | the name of what it opens as its heading, as "Orca"; "Close", spoken | A panel over the board | `Panel` in src/ui/Panel.tsx |

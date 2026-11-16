@@ -9,6 +9,8 @@ export type CardProps = {
   mark: Mark | null;
   /** Keeps the card from being dragged. */
   disabled: boolean;
+  /** Called with the card's id and its ⓘ when the ⓘ is pressed. */
+  onOpen: (card: string, opener: HTMLElement) => void;
 };
 
 const icons: Record<Mark, string> = {
@@ -23,21 +25,22 @@ const words: Record<Mark, string> = {
 };
 
 /**
- * One card of the deck, showing its name and its mark, moved only by
- * dragging it. It is a draggable whose id is the card's id, so it must be
+ * One card of the deck, showing its name, its mark and its ⓘ, moved only by
+ * dragging it. A press on the ⓘ calls `onOpen` and never starts a drag, even
+ * while `disabled`. It is a draggable whose id is the card's id, so it must be
  * rendered inside the board's `DndContext`.
  */
-export default function Card({ card, mark, disabled }: CardProps) {
-  // The draggable's `attributes` are left off the button: they add a role
-  // description and a description in words the app never shows.
+export default function Card({ card, mark, disabled, onOpen }: CardProps) {
+  // The draggable's `attributes` are left off the card: they would make it
+  // focusable and add a role, a role description and a description in words
+  // the app never shows, and the ⓘ is the card's one focusable part.
   const { setNodeRef, listeners, transform, isDragging } = useDraggable({
     id: card.id,
     disabled,
   });
   return (
-    <button
+    <div
       ref={setNodeRef}
-      type="button"
       className={
         "card" +
         (disabled ? " card-locked" : "") +
@@ -51,13 +54,23 @@ export default function Card({ card, mark, disabled }: CardProps) {
       }
       {...listeners}
     >
-      {card.name}
+      <span>{card.name}</span>
       {/* The icon shows the mark beside its colour; the hidden word speaks it,
-          so the spoken name reads "<card> Correct", "<card> Incorrect" or
+          so a screen reader reads "<card> Correct", "<card> Incorrect" or
           "<card> No answer". */}
       {mark && " "}
       {mark && <span aria-hidden="true">{icons[mark]}</span>}
       {mark && <span className="visually-hidden">{words[mark]}</span>}
-    </button>
+      <button
+        type="button"
+        className="card-info"
+        // A press on the ⓘ opens the card and never reaches the card's drag
+        // listeners, so it cannot start a drag.
+        onPointerDown={(event) => event.stopPropagation()}
+        onClick={(event) => onOpen(card.id, event.currentTarget)}
+      >
+        ⓘ
+      </button>
+    </div>
   );
 }

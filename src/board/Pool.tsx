@@ -12,6 +12,8 @@ export type PoolProps = {
   marks: Record<string, Mark>;
   /** Keeps every card shown here from being dragged. */
   disabled: boolean;
+  /** Called with a card's id and its ⓘ when that ⓘ is pressed. */
+  onOpen: (card: string, opener: HTMLElement) => void;
 };
 
 /**
@@ -19,7 +21,7 @@ export type PoolProps = {
  * dropped on it is placed in the pool, so it must be rendered inside the
  * board's `DndContext`.
  */
-export default function Pool({ cards, marks, disabled }: PoolProps) {
+export default function Pool({ cards, marks, disabled, onOpen }: PoolProps) {
   const labelId = useId();
   const { setNodeRef, isOver } = useDroppable({
     id: "pool",
@@ -40,6 +42,7 @@ export default function Pool({ cards, marks, disabled }: PoolProps) {
           card={card}
           mark={marks[card.id] ?? null}
           disabled={disabled}
+          onOpen={onOpen}
         />
       ))}
     </section>

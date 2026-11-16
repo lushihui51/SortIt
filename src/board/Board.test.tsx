@@ -1,4 +1,10 @@
-import { cleanup, render, screen, within } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  within,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, expect, test, vi } from "vitest";
 import type { Deck } from "../../convex/model/deck";
@@ -43,11 +49,21 @@ function labelOf(region: HTMLElement): HTMLElement {
   return document.getElementById(region.getAttribute("aria-labelledby")!)!;
 }
 
-/** The text of each card in a region, in the order shown. */
+/** The card named `name`, found by the text of its name in `container`. */
+function cardNamed(name: string, container: HTMLElement = document.body) {
+  return within(container).getByText(name).parentElement!;
+}
+
+/** The ⓘ of the card named `name`. */
+function infoOf(name: string): HTMLElement {
+  return within(cardNamed(name)).getByRole("button", { name: "ⓘ" });
+}
+
+/** The text of each card in a region but its ⓘ, in the order shown. */
 function cardsIn(name: string): string[] {
   return within(region(name))
-    .queryAllByRole("button")
-    .map((button) => button.textContent ?? "");
+    .queryAllByRole("button", { name: "ⓘ" })
+    .map((info) => info.parentElement!.textContent!.replace(/ⓘ$/, ""));
 }
 
 const choose = (dimension: string): DeckBoardAction => ({
@@ -185,24 +201,15 @@ test("shows each dimension, zone and card by its name for a deck whose ids diffe
       .map((zone) => labelOf(zone).textContent),
   ).toEqual(["Ocean", "Forest"]);
   expect(cardsIn("Ocean")).toEqual(["Shark ✓Correct", "Deer ✕Incorrect"]);
-  for (const name of ["Shark Correct", "Deer Incorrect"])
+  for (const [name, word] of [
+    ["Shark", "Correct"],
+    ["Deer", "Incorrect"],
+  ])
     expect(
-      within(region("Ocean")).getByRole("button", { name }),
-    ).toBeInTheDocument();
+      within(cardNamed(name, region("Ocean"))).getByText(word),
+    ).toHaveClass("visually-hidden");
   expect(screen.getByText("1 of 2 correct")).toBeInTheDocument();
   expect(screen.queryByText(/(dimension|category|card)-\d/)).toBeNull();
-});
-
-test("no card's button is disabled, before or after a dimension is chosen", () => {
-  setUp(appDeck, boardAfter(appDeck));
-  const before = within(region("Unsorted")).getAllByRole("button");
-  expect(before).toHaveLength(names.length);
-  for (const card of before) expect(card).toBeEnabled();
-  cleanup();
-  setUp(appDeck, boardAfter(appDeck, ...mixed));
-  for (const name of ["Unsorted", ...habitatCategories])
-    for (const card of within(region(name)).queryAllByRole("button"))
-      expect(card).toBeEnabled();
 });
 
 test("pressing a dimension dispatches chooseDimension with its id", async () => {
@@ -226,11 +233,11 @@ test("Reset dispatches reset", async () => {
 
 test("a press on a card dispatches nothing and no card reads Selected", async () => {
   const { user, dispatch } = setUp(appDeck, boardAfter(appDeck));
-  await user.click(screen.getByRole("button", { name: afterLoad[0] }));
+  await user.click(cardNamed(afterLoad[0]));
   cleanup();
   const after = setUp(appDeck, boardAfter(appDeck, ...mixed));
-  await after.user.click(screen.getByRole("button", { name: afterChoose[3] }));
-  await after.user.click(screen.getByRole("button", { name: right1 }));
+  await after.user.click(cardNamed(afterChoose[3]));
+  await after.user.click(cardNamed(right1));
   await after.user.keyboard("{Enter}");
   expect(dispatch).not.toHaveBeenCalled();
   expect(after.dispatch).not.toHaveBeenCalled();
@@ -282,18 +289,19 @@ test("while Check is on, each card in a zone shows Correct or Incorrect and no c
     [right2, "correct", "Correct", "✓"],
   ]) {
     const zone = mark === "correct" ? answer(card) : wrongFor(card);
-    const button = within(region(zone)).getByRole("button", {
-      name: `${card} ${word}`,
-    });
-    expect(button).toHaveAttribute("data-mark", mark);
-    expect(within(button).getByText(icon)).toHaveAttribute(
+    const shown = cardNamed(card, region(zone));
+    expect(shown).toHaveAttribute("data-mark", mark);
+    expect(within(shown).getByText(word)).toHaveClass("visually-hidden");
+    expect(within(shown).getByText(icon)).toHaveAttribute(
       "aria-hidden",
       "true",
     );
   }
   expect(cardsIn("Unsorted")).toEqual(afterChoose.slice(3));
-  for (const card of within(region("Unsorted")).getAllByRole("button"))
-    expect(card).not.toHaveAttribute("data-mark");
+  for (const card of afterChoose.slice(3))
+    expect(cardNamed(card, region("Unsorted"))).not.toHaveAttribute(
+      "data-mark",
+    );
 });
 
 test("while Check is off, no card shows Correct or Incorrect", () => {
@@ -307,12 +315,13 @@ test("while Check is off, no card shows Correct or Incorrect", () => {
 
 test("an incorrect card shows its name, the icon and Incorrect, and no category", () => {
   setUp(appDeck, boardAfter(appDeck, ...mixed, toggleCheck));
-  const button = screen.getByRole("button", { name: `${wrong1} Incorrect` });
-  expect(button).toHaveTextContent(`${wrong1} ✕Incorrect`, {
+  const card = cardNamed(wrong1);
+  expect(within(card).getByText("Incorrect")).toHaveClass("visually-hidden");
+  expect(card).toHaveTextContent(`${wrong1} ✕Incorrect`, {
     normalizeWhitespace: false,
   });
   for (const category of habitatCategories)
-    expect(button.textContent).not.toContain(category);
+    expect(card.textContent).not.toContain(category);
 });
 
 // Platypus has no answer under Habitat, so it bears the no-answer mark there,
@@ -346,10 +355,9 @@ test("a card with no answer under the chosen dimension shows No answer in the po
     ["Ocean", [choose("habitat"), place("platypus", "ocean"), toggleCheck]],
   ] as const) {
     setUp(partial, boardAfter(partial, ...actions));
-    const card = within(region(where)).getByRole("button", {
-      name: "Platypus No answer",
-    });
+    const card = cardNamed("Platypus", region(where));
     expect(card).toHaveAttribute("data-mark", "noAnswer");
+    expect(within(card).getByText("No answer")).toHaveClass("visually-hidden");
     expect(card).toHaveTextContent("Platypus ?No answer", {
       normalizeWhitespace: false,
     });
@@ -421,4 +429,80 @@ test("Retry shows only while Check is on and a card in a zone is incorrect, and 
     type: "retry",
     random: zero,
   });
+});
+
+test("a card is not a button and holds one button, its ⓘ", () => {
+  for (const board of [
+    boardAfter(appDeck),
+    boardAfter(appDeck, ...mixed, toggleCheck),
+  ]) {
+    setUp(appDeck, board);
+    for (const name of names) {
+      expect(screen.getByText(name).tagName).toBe("SPAN");
+      const card = cardNamed(name);
+      expect(card.tagName).toBe("DIV");
+      expect(card).not.toHaveAttribute("role");
+      expect(card).not.toHaveAttribute("tabindex");
+      const buttons = within(card).getAllByRole("button");
+      expect(buttons).toEqual([infoOf(name)]);
+      expect(buttons[0]).toHaveTextContent(/^ⓘ$/);
+      expect(buttons[0]).toHaveAttribute("type", "button");
+      expect(screen.queryByRole("button", { name })).toBeNull();
+    }
+    cleanup();
+  }
+});
+
+test("pressing a card's ⓘ opens a panel headed by the card's name, before and after a dimension is chosen", async () => {
+  for (const [deck, board, name] of [
+    [appDeck, boardAfter(appDeck), afterLoad[2]],
+    [appDeck, boardAfter(appDeck, ...mixed, toggleCheck), wrong1],
+    [numbered, boardAfter(numbered), "Shark"],
+  ] as const) {
+    const { user, dispatch } = setUp(deck, board);
+    expect(screen.queryByRole("dialog")).toBeNull();
+    await user.click(infoOf(name));
+    const panel = screen.getByRole("dialog", { name });
+    expect(panel).toHaveAttribute("aria-modal", "true");
+    expect(
+      within(panel).getByRole("heading", { level: 2, name }),
+    ).toBeInTheDocument();
+    expect(within(panel).getByRole("button", { name: "Close" })).toHaveFocus();
+    expect(screen.queryByText(/card-\d/)).toBeNull();
+    expect(dispatch).not.toHaveBeenCalled();
+    cleanup();
+  }
+});
+
+test("Close closes the card's panel", async () => {
+  const { user, dispatch } = setUp(appDeck, boardAfter(appDeck, ...mixed));
+  const info = infoOf(right1);
+  await user.click(info);
+  await user.click(screen.getByRole("button", { name: "Close" }));
+  expect(screen.queryByRole("dialog")).toBeNull();
+  expect(info).toHaveFocus();
+  await user.click(info);
+  await user.keyboard("{Escape}");
+  expect(screen.queryByRole("dialog")).toBeNull();
+  expect(info).toHaveFocus();
+  expect(dispatch).not.toHaveBeenCalled();
+});
+
+test("a pointer press on a card's ⓘ stops at the ⓘ, and one on the card's name does not", () => {
+  for (const [board, name] of [
+    [boardAfter(appDeck), afterLoad[0]],
+    [boardAfter(appDeck, ...mixed), right1],
+  ] as const) {
+    const outside = vi.fn();
+    render(
+      <div onPointerDown={outside}>
+        <Board deck={appDeck} board={board} dispatch={vi.fn()} random={zero} />
+      </div>,
+    );
+    fireEvent.pointerDown(infoOf(name));
+    expect(outside).not.toHaveBeenCalled();
+    fireEvent.pointerDown(screen.getByText(name));
+    expect(outside).toHaveBeenCalledOnce();
+    cleanup();
+  }
 });
