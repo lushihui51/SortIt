@@ -11,6 +11,7 @@ Judgement: The engineer opens the app at `npm run dev` in a desktop browser and 
 ## Records
 
 - ADR 007: One deck shape keyed by ids made on the device, with the app's own deck bundled as JSON keyed by name
+- ADR 018: Vitest in four kinds, unit, component in jsdom, Convex functions under convex-test and the record citation guard, with dragging checked by hand
 
 ## Tasks
 
@@ -126,7 +127,7 @@ export function toDeck(file: AppDeckFile): Deck;
 ```
 
 - `toDeck` must give the deck the id `appDeckId` and the name `""`, and give each dimension, each category and each card its name as its id, in the file's order.
-- `toDeck` must give each card one answer for each key of its `answers` that names a dimension of the file, keyed by that name with the category name as its value, and must drop a key that names no dimension.
+- `toDeck` must give each card one answer for each key of its `answers` that names a dimension of the file, keyed by that name with the category name as its value, and must drop a key that names no dimension. `toDeck` checks no value: an answer whose value names no category of its dimension is kept as it stands, since `findFirstFault` refuses a file that holds one and the test of the app's own deck proves the shipped file holds none.
 - src/deck/appDeck.ts must export the file and its `Deck`, the import assigned to its type so that TypeScript checks the file's shape:
 
 ```ts
@@ -158,7 +159,7 @@ export const appDeck: Deck = toDeck(appDeckFile);
 **Out of scope**
 
 - Reading the `Deck` by ids on the board: T2.
-- Checking the app's own deck when the app starts, or showing an error in place of the board: an unsettled decision.
+- Checking the app's own deck when the app starts, or showing an error in place of the board: a later cycle; the sentences the error shows for six of its seven faults are an unsettled decision.
 - A name for the app's own deck in deck.json, or any name for it but the empty string `toDeck` gives: an unsettled decision.
 - Installing the `convex` package, or adding any other file under convex/: a later cycle.
 - Carrying the rename into a record or a file under docs/cycles/: never.
@@ -229,7 +230,8 @@ export type BoardProps = {
 - No rule of the board changes: every test in src/board/board.test.ts and src/board/Board.test.tsx must keep what it asserts, rewritten over ids where it names a card, a dimension or a category.
 - The deck that src/board/board.test.ts reduces over must give every dimension, category and card an id that differs from its name, so that a key taken from a name fails a test.
 - Guidance: src/board/Board.test.tsx keeps rendering the app's own deck, now `appDeck`, whose ids are its names, and adds the one test of the Done when over a deck of its own whose ids differ from its names.
-- Guidance: `Pool` and `Zone` take the `Card` objects they show and `DimensionPicker` the `Dimension` objects, so each component reads the id and the name from one value.
+- Guidance: `Pool` and `Zone` take the `Card` objects they show and `DimensionPicker` the `Dimension` objects, so each component reads the id and the name from one value. `Pool` and `Zone`, which also import the component `Card`, import the type as `CardModel`. `Zone` takes its `Category` object the same way, and the component `Card` takes the card it shows as a `CardModel`, imported under that name there too.
+- The builder cannot drag a card in jsdom (ADR 018). The checks by hand of the cycle's Judgement are the engineer's, and the builder's evidence for it is the tests and the commands of this Done when.
 
 **Out of scope**
 
