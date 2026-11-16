@@ -1,8 +1,6 @@
-/* A touch that moves a card drags it instead of scrolling the page. The card
-   stands above its region's stretched label, so pressing it presses the card. */
+/* A touch that moves a card drags it instead of scrolling the page. */
 .card {
   position: relative;
-  z-index: 1;
   touch-action: none;
   padding: var(--card-padding-block) var(--card-padding-inline);
   background: var(--color-card);
@@ -13,15 +11,10 @@
 }
 
 /* Before a dimension is chosen the pool is the learner's first view of the
-   deck, so a disabled card looks like any other but for the cursor. */
-.card:disabled {
+   deck, so a card that cannot be dragged looks like any other but for the
+   cursor. */
+.card-locked {
   cursor: default;
-}
-
-.card-selected {
-  background: var(--color-card-selected);
-  border-color: var(--color-card-selected-ring);
-  box-shadow: 0 0 0 var(--selected-ring-width) var(--color-card-selected-ring);
 }
 
 /* The colour of a mark; the card's icon carries the same verdict for a
@@ -32,6 +25,10 @@
 
 .card[data-mark="incorrect"] {
   background: var(--color-incorrect);
+}
+
+.card[data-mark="noAnswer"] {
+  background: var(--color-no-answer);
 }
 
 .card:focus-visible {

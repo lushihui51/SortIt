@@ -1,49 +1,92 @@
 import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, expect, test } from "vitest";
+import { afterEach, expect, test, vi } from "vitest";
 import type { Deck } from "../../convex/model/deck";
 import { appDeck } from "../deck/appDeck";
 import Board from "./Board";
-import { shuffle } from "./board";
+import { boardsReducer, noBoards, shuffle, type BoardState } from "./board";
+import type { DeckBoardAction } from "./BoardsProvider";
 
 afterEach(cleanup);
 
 // With every draw 0, each shuffle is a fixed rotation of the order before it,
 // so every test knows the exact order of the cards after each shuffle.
 const zero = () => 0;
-const names = appDeck.cards.map((card) => card.name);
-const afterLoad = shuffle(names, zero);
-const afterChoose = shuffle(afterLoad, zero);
 
-function setUp() {
+/** The board of `deck` after its load and then `actions`, built by `boardsReducer`. */
+function boardAfter(deck: Deck, ...actions: DeckBoardAction[]): BoardState {
+  let state = boardsReducer(noBoards, { type: "load", deck, random: zero });
+  for (const action of actions) {
+    state = boardsReducer(
+      state,
+      action.type === "toggleCheck"
+        ? { type: "toggleCheck", deckId: deck.id }
+        : { ...action, deck },
+    );
+  }
+  return state[deck.id];
+}
+
+function setUp(deck: Deck, board: BoardState) {
   const user = userEvent.setup();
-  render(<Board deck={appDeck} random={zero} />);
-  return user;
+  const dispatch = vi.fn<(action: DeckBoardAction) => void>();
+  render(<Board deck={deck} board={board} dispatch={dispatch} random={zero} />);
+  return { user, dispatch };
 }
 
 function region(name: string) {
   return screen.getByRole("region", { name });
 }
 
-/** The accessible names of the cards in a region, its label left out. */
+/** The element whose text names `region`. */
+function labelOf(region: HTMLElement): HTMLElement {
+  return document.getElementById(region.getAttribute("aria-labelledby")!)!;
+}
+
+/** The text of each card in a region, in the order shown. */
 function cardsIn(name: string): string[] {
   return within(region(name))
-    .getAllByRole("button")
-    .slice(1)
+    .queryAllByRole("button")
     .map((button) => button.textContent ?? "");
 }
 
-const habitat = appDeck.dimensions[0];
-const diet = appDeck.dimensions[1];
-const habitatCategories = habitat.categories.map((category) => category.name);
-const dietCategories = diet.categories.map((category) => category.name);
+const choose = (dimension: string): DeckBoardAction => ({
+  type: "chooseDimension",
+  dimension,
+  random: zero,
+});
+const place = (card: string, category: string): DeckBoardAction => ({
+  type: "place",
+  card,
+  place: { kind: "zone", category },
+});
+const toggleCheck: DeckBoardAction = { type: "toggleCheck" };
 
-async function chooseHabitat(user: ReturnType<typeof userEvent.setup>) {
-  await user.click(screen.getByRole("button", { name: habitat.name }));
-}
+const names = appDeck.cards.map((card) => card.name);
+const afterLoad = shuffle(names, zero);
+const afterChoose = shuffle(afterLoad, zero);
+const habitat = appDeck.dimensions[0];
+const habitatCategories = habitat.categories.map((category) => category.name);
+
+// In `appDeck` every id is its name, so a card's name is its id here.
+/** The id of the Habitat category that is the answer of `card`. */
+const answer = (card: string) =>
+  appDeck.cards.find((each) => each.id === card)!.answers[habitat.id];
+/** The id of a Habitat category that is not the answer of `card`. */
+const wrongFor = (card: string) =>
+  habitat.categories.find((category) => category.id !== answer(card))!.id;
+
+// Two cards placed right, one placed wrong, the rest in the pool.
+const [right1, wrong1, right2] = afterChoose;
+const mixed = [
+  choose(habitat.id),
+  place(right1, answer(right1)),
+  place(wrong1, wrongFor(wrong1)),
+  place(right2, answer(right2)),
+];
 
 test("shows every card in the pool, the prompt and no zone before a dimension is chosen", () => {
-  setUp();
+  setUp(appDeck, boardAfter(appDeck));
   expect(cardsIn("Unsorted")).toEqual(afterLoad);
   expect(screen.getByText("Choose how to sort to begin")).toBeInTheDocument();
   expect(screen.getAllByRole("region")).toHaveLength(1);
@@ -55,343 +98,28 @@ test("shows every card in the pool, the prompt and no zone before a dimension is
   }
 });
 
-test("disables every card before a dimension is chosen", () => {
-  setUp();
-  const cards = within(region("Unsorted")).getAllByRole("button").slice(1);
-  expect(cards).toHaveLength(names.length);
-  for (const card of cards) expect(card).toBeDisabled();
-});
-
-test("shows one zone per category of the chosen dimension and removes the prompt", async () => {
-  const user = setUp();
-  await chooseHabitat(user);
-  expect(
-    screen
-      .getAllByRole("region")
-      .slice(1)
-      .map((zone) => within(zone).getAllByRole("button")[0].textContent),
-  ).toEqual(habitatCategories);
+test("shows one zone per category of the chosen dimension, the pool and each zone labelled in plain text", () => {
+  setUp(appDeck, boardAfter(appDeck, choose(habitat.id)));
+  const regions = screen.getAllByRole("region");
+  expect(regions.map((each) => region(labelOf(each).textContent!))).toEqual(
+    regions,
+  );
+  expect(regions.map((each) => labelOf(each).textContent)).toEqual([
+    "Unsorted",
+    ...habitatCategories,
+  ]);
+  for (const each of regions) {
+    expect(labelOf(each).tagName).toBe("SPAN");
+    expect(each).toContainElement(labelOf(each));
+  }
+  for (const name of ["Unsorted", ...habitatCategories])
+    expect(screen.queryByRole("button", { name })).toBeNull();
+  expect(cardsIn("Unsorted")).toEqual(afterChoose);
   expect(screen.queryByText("Choose how to sort to begin")).toBeNull();
   expect(screen.getByRole("button", { name: habitat.name })).toHaveAttribute(
     "aria-pressed",
     "true",
   );
-  for (const card of within(region("Unsorted")).getAllByRole("button"))
-    expect(card).toBeEnabled();
-});
-
-test("sends a selected card to a zone by click", async () => {
-  const user = setUp();
-  await chooseHabitat(user);
-  const card = afterChoose[0];
-  await user.click(screen.getByRole("button", { name: card }));
-  expect(
-    screen.getByRole("button", { name: `${card} Selected` }),
-  ).toBeInTheDocument();
-  await user.click(screen.getByRole("button", { name: "Ocean" }));
-  expect(cardsIn("Ocean")).toEqual([card]);
-  expect(cardsIn("Unsorted")).toEqual(afterChoose.slice(1));
-});
-
-test("sends a selected card to a zone by keyboard", async () => {
-  const user = setUp();
-  await chooseHabitat(user);
-  const card = afterChoose[0];
-  screen.getByRole("button", { name: card }).focus();
-  await user.keyboard("{Enter}");
-  expect(
-    screen.getByRole("button", { name: `${card} Selected` }),
-  ).toBeInTheDocument();
-  screen.getByRole("button", { name: "Forest" }).focus();
-  await user.keyboard(" ");
-  expect(cardsIn("Forest")).toEqual([card]);
-  expect(cardsIn("Unsorted")).toEqual(afterChoose.slice(1));
-});
-
-test("returns a selected card to the pool by click on the pool's label", async () => {
-  const user = setUp();
-  await chooseHabitat(user);
-  const card = afterChoose[0];
-  await user.click(screen.getByRole("button", { name: card }));
-  await user.click(screen.getByRole("button", { name: "Ocean" }));
-  await user.click(screen.getByRole("button", { name: card }));
-  await user.click(screen.getByRole("button", { name: "Unsorted" }));
-  expect(cardsIn("Ocean")).toEqual([]);
-  expect(cardsIn("Unsorted")).toEqual(afterChoose);
-});
-
-test("clears the selection on a second click on the selected card", async () => {
-  const user = setUp();
-  await chooseHabitat(user);
-  const card = afterChoose[0];
-  await user.click(screen.getByRole("button", { name: card }));
-  await user.click(screen.getByRole("button", { name: `${card} Selected` }));
-  expect(screen.queryByText("Selected")).toBeNull();
-  await user.click(screen.getByRole("button", { name: "Ocean" }));
-  expect(cardsIn("Ocean")).toEqual([]);
-});
-
-test("clears the selection on Escape", async () => {
-  const user = setUp();
-  await chooseHabitat(user);
-  const card = afterChoose[0];
-  await user.click(screen.getByRole("button", { name: card }));
-  await user.keyboard("{Escape}");
-  expect(screen.queryByText("Selected")).toBeNull();
-  expect(screen.getByRole("button", { name: card })).toBeInTheDocument();
-});
-
-test("does nothing on a zone's label while no card is selected", async () => {
-  const user = setUp();
-  await chooseHabitat(user);
-  await user.click(screen.getByRole("button", { name: "Ocean" }));
-  expect(cardsIn("Ocean")).toEqual([]);
-  expect(cardsIn("Unsorted")).toEqual(afterChoose);
-});
-
-test("Reset returns every card to the pool and keeps the dimension", async () => {
-  const user = setUp();
-  await chooseHabitat(user);
-  for (const [card, zone] of [
-    [afterChoose[0], "Ocean"],
-    [afterChoose[1], "Desert"],
-  ]) {
-    await user.click(screen.getByRole("button", { name: card }));
-    await user.click(screen.getByRole("button", { name: zone }));
-  }
-  await user.click(screen.getByRole("button", { name: afterChoose[2] }));
-  await user.click(screen.getByRole("button", { name: "Reset" }));
-  expect(cardsIn("Unsorted")).toEqual(shuffle(afterChoose, zero));
-  expect(screen.queryByText("Selected")).toBeNull();
-  for (const category of habitatCategories)
-    expect(cardsIn(category)).toEqual([]);
-  expect(screen.getByRole("button", { name: habitat.name })).toHaveAttribute(
-    "aria-pressed",
-    "true",
-  );
-});
-
-test("choosing another dimension clears the board and shows its zones", async () => {
-  const user = setUp();
-  await chooseHabitat(user);
-  await user.click(screen.getByRole("button", { name: afterChoose[0] }));
-  await user.click(screen.getByRole("button", { name: "Ocean" }));
-  await user.click(screen.getByRole("button", { name: afterChoose[1] }));
-  await user.click(screen.getByRole("button", { name: diet.name }));
-  expect(cardsIn("Unsorted")).toEqual(shuffle(afterChoose, zero));
-  expect(screen.queryByText("Selected")).toBeNull();
-  expect(
-    screen
-      .getAllByRole("region")
-      .slice(1)
-      .map((zone) => within(zone).getAllByRole("button")[0].textContent),
-  ).toEqual(dietCategories);
-  for (const category of dietCategories) expect(cardsIn(category)).toEqual([]);
-  expect(screen.getByRole("button", { name: diet.name })).toHaveAttribute(
-    "aria-pressed",
-    "true",
-  );
-  expect(screen.getByRole("button", { name: habitat.name })).toHaveAttribute(
-    "aria-pressed",
-    "false",
-  );
-});
-
-test("choosing the current dimension again changes nothing", async () => {
-  const user = setUp();
-  await chooseHabitat(user);
-  await user.click(screen.getByRole("button", { name: afterChoose[0] }));
-  await user.click(screen.getByRole("button", { name: "Ocean" }));
-  await user.click(screen.getByRole("button", { name: afterChoose[1] }));
-  await chooseHabitat(user);
-  expect(cardsIn("Ocean")).toEqual([afterChoose[0]]);
-  expect(
-    screen.getByRole("button", { name: `${afterChoose[1]} Selected` }),
-  ).toBeInTheDocument();
-  expect(cardsIn("Unsorted")).toEqual([
-    `${afterChoose[1]} Selected`,
-    ...afterChoose.slice(2),
-  ]);
-});
-
-/** The name of the Habitat category that is the answer of the card named `card`. */
-const answer = (card: string) => {
-  const id = appDeck.cards.find((each) => each.name === card)!.answers[
-    habitat.id
-  ];
-  return habitat.categories.find((category) => category.id === id)!.name;
-};
-
-/** The name of a Habitat category that is not `card`'s answer. */
-const wrongFor = (card: string) =>
-  habitatCategories.find((category) => category !== answer(card))!;
-
-/**
- * Places every card of the pool by click, in the pool's order, into the zone
- * `wrong` names for it, or else into the zone of its Habitat answer.
- */
-async function placeAll(
-  user: ReturnType<typeof userEvent.setup>,
-  wrong: Record<string, string> = {},
-) {
-  for (const card of cardsIn("Unsorted")) {
-    await user.click(screen.getByRole("button", { name: card }));
-    await user.click(
-      screen.getByRole("button", { name: wrong[card] ?? answer(card) }),
-    );
-  }
-}
-
-function checkButton() {
-  return screen.getByRole("button", { name: "Check" });
-}
-
-function retryButton() {
-  return screen.getByRole("button", { name: "Retry" });
-}
-
-const hint = "Place every card to check";
-const wrongTwo = {
-  [afterChoose[0]]: wrongFor(afterChoose[0]),
-  [afterChoose[2]]: wrongFor(afterChoose[2]),
-};
-
-test("disables Check and shows the hint while the pool is not empty", async () => {
-  const user = setUp();
-  expect(checkButton()).toBeDisabled();
-  expect(checkButton().nextElementSibling).toHaveTextContent(hint);
-  await chooseHabitat(user);
-  await user.click(screen.getByRole("button", { name: afterChoose[0] }));
-  await user.click(
-    screen.getByRole("button", { name: answer(afterChoose[0]) }),
-  );
-  expect(checkButton()).toBeDisabled();
-  expect(checkButton().nextElementSibling).toHaveTextContent(hint);
-});
-
-test("enables Check and removes the hint once the pool is empty", async () => {
-  const user = setUp();
-  await chooseHabitat(user);
-  await placeAll(user);
-  expect(cardsIn("Unsorted")).toEqual([]);
-  expect(checkButton()).toBeEnabled();
-  expect(screen.queryByText(hint)).toBeNull();
-});
-
-test("Check marks every card where it lies and shows the score", async () => {
-  const user = setUp();
-  await chooseHabitat(user);
-  await placeAll(user, wrongTwo);
-  expect(screen.queryByText(/correct$/)).toBeNull();
-  await user.click(checkButton());
-  for (const card of names) {
-    const mark = card in wrongTwo ? "incorrect" : "correct";
-    const word = mark === "correct" ? "Correct" : "Incorrect";
-    const zone = wrongTwo[card] ?? answer(card);
-    const button = within(region(zone)).getByRole("button", {
-      name: `${card} ${word}`,
-    });
-    expect(button).toHaveAttribute("data-mark", mark);
-    expect(
-      within(button).getByText(mark === "correct" ? "✓" : "✕"),
-    ).toHaveAttribute("aria-hidden", "true");
-  }
-  expect(
-    screen.getByText(`${names.length - 2} of ${names.length} correct`),
-  ).toBeInTheDocument();
-});
-
-test("an incorrect card shows its name, the icon and Incorrect, and no category", async () => {
-  const user = setUp();
-  await chooseHabitat(user);
-  await placeAll(user, wrongTwo);
-  await user.click(checkButton());
-  const card = afterChoose[0];
-  const button = screen.getByRole("button", { name: `${card} Incorrect` });
-  expect(button).toHaveTextContent(`${card} ✕Incorrect`, {
-    normalizeWhitespace: false,
-  });
-  for (const category of habitatCategories)
-    expect(button.textContent).not.toContain(category);
-});
-
-test("Retry is disabled while no card is marked incorrect", async () => {
-  const user = setUp();
-  expect(retryButton()).toBeDisabled();
-  await chooseHabitat(user);
-  await placeAll(user);
-  expect(retryButton()).toBeDisabled();
-  await user.click(checkButton());
-  expect(
-    screen.getByText(`${names.length} of ${names.length} correct`),
-  ).toBeInTheDocument();
-  expect(retryButton()).toBeDisabled();
-});
-
-test("Retry returns only the incorrect cards to the pool, removes their marks and the score, and keeps the correct marks", async () => {
-  const user = setUp();
-  await chooseHabitat(user);
-  await placeAll(user, wrongTwo);
-  await user.click(checkButton());
-  expect(retryButton()).toBeEnabled();
-  await user.click(retryButton());
-  expect(cardsIn("Unsorted")).toEqual(
-    shuffle(
-      afterChoose.filter((card) => card in wrongTwo),
-      zero,
-    ),
-  );
-  for (const card of Object.keys(wrongTwo))
-    expect(screen.getByRole("button", { name: card })).not.toHaveAttribute(
-      "data-mark",
-    );
-  for (const card of names.filter((name) => !(name in wrongTwo)))
-    expect(
-      within(region(answer(card))).getByRole("button", {
-        name: `${card} Correct`,
-      }),
-    ).toHaveAttribute("data-mark", "correct");
-  expect(screen.queryByText(/ correct$/)).toBeNull();
-  expect(checkButton()).toBeDisabled();
-  expect(screen.getByText(hint)).toBeInTheDocument();
-  expect(retryButton()).toBeDisabled();
-});
-
-test("selecting a correct card removes its mark and the score", async () => {
-  const user = setUp();
-  await chooseHabitat(user);
-  await placeAll(user, wrongTwo);
-  await user.click(checkButton());
-  const card = afterChoose[1];
-  await user.click(screen.getByRole("button", { name: `${card} Correct` }));
-  const button = screen.getByRole("button", { name: `${card} Selected` });
-  expect(button).not.toHaveAttribute("data-mark");
-  expect(screen.queryByText(/ correct$/)).toBeNull();
-  expect(
-    screen.getByRole("button", { name: `${afterChoose[3]} Correct` }),
-  ).toBeInTheDocument();
-});
-
-test("Reset removes every mark and the score", async () => {
-  const user = setUp();
-  await chooseHabitat(user);
-  await placeAll(user, wrongTwo);
-  await user.click(checkButton());
-  await user.click(screen.getByRole("button", { name: "Reset" }));
-  expect(document.querySelector("[data-mark]")).toBeNull();
-  expect(cardsIn("Unsorted")).toEqual(shuffle(afterChoose, zero));
-  expect(screen.queryByText(/ correct$/)).toBeNull();
-});
-
-test("choosing another dimension removes every mark and the score", async () => {
-  const user = setUp();
-  await chooseHabitat(user);
-  await placeAll(user, wrongTwo);
-  await user.click(checkButton());
-  await user.click(screen.getByRole("button", { name: diet.name }));
-  expect(document.querySelector("[data-mark]")).toBeNull();
-  expect(cardsIn("Unsorted")).toEqual(shuffle(afterChoose, zero));
-  expect(screen.queryByText(/ correct$/)).toBeNull();
 });
 
 // Every id differs from its name, so a dimension, zone or card that showed its
@@ -431,32 +159,266 @@ const numbered: Deck = {
   ],
 };
 
-test("shows each dimension, zone and card by its name for a deck whose ids differ from its names", async () => {
-  const user = userEvent.setup();
-  render(<Board deck={numbered} random={zero} />);
+test("shows each dimension, zone and card by its name for a deck whose ids differ from its names", () => {
+  setUp(numbered, boardAfter(numbered));
   expect(
     within(screen.getByRole("group", { name: "Sort by" }))
       .getAllByRole("button")
       .map((button) => button.textContent),
   ).toEqual(["Habitat", "Diet"]);
   expect(cardsIn("Unsorted")).toEqual(["Deer", "Shark"]);
-  await user.click(screen.getByRole("button", { name: "Habitat" }));
+  cleanup();
+  setUp(
+    numbered,
+    boardAfter(
+      numbered,
+      choose("dimension-1"),
+      place("card-1", "category-1"),
+      place("card-2", "category-1"),
+      toggleCheck,
+    ),
+  );
   expect(
     screen
       .getAllByRole("region")
       .slice(1)
-      .map((zone) => within(zone).getAllByRole("button")[0].textContent),
+      .map((zone) => labelOf(zone).textContent),
   ).toEqual(["Ocean", "Forest"]);
-  await user.click(screen.getByRole("button", { name: "Shark" }));
-  await user.click(screen.getByRole("button", { name: "Ocean" }));
-  await user.click(screen.getByRole("button", { name: "Deer" }));
-  await user.click(screen.getByRole("button", { name: "Ocean" }));
-  expect(cardsIn("Ocean")).toEqual(["Shark", "Deer"]);
-  await user.click(screen.getByRole("button", { name: "Check" }));
+  expect(cardsIn("Ocean")).toEqual(["Shark ✓Correct", "Deer ✕Incorrect"]);
   for (const name of ["Shark Correct", "Deer Incorrect"])
     expect(
       within(region("Ocean")).getByRole("button", { name }),
     ).toBeInTheDocument();
   expect(screen.getByText("1 of 2 correct")).toBeInTheDocument();
   expect(screen.queryByText(/(dimension|category|card)-\d/)).toBeNull();
+});
+
+test("no card's button is disabled, before or after a dimension is chosen", () => {
+  setUp(appDeck, boardAfter(appDeck));
+  const before = within(region("Unsorted")).getAllByRole("button");
+  expect(before).toHaveLength(names.length);
+  for (const card of before) expect(card).toBeEnabled();
+  cleanup();
+  setUp(appDeck, boardAfter(appDeck, ...mixed));
+  for (const name of ["Unsorted", ...habitatCategories])
+    for (const card of within(region(name)).queryAllByRole("button"))
+      expect(card).toBeEnabled();
+});
+
+test("pressing a dimension dispatches chooseDimension with its id", async () => {
+  const { user, dispatch } = setUp(numbered, boardAfter(numbered));
+  await user.click(screen.getByRole("button", { name: "Diet" }));
+  expect(dispatch).toHaveBeenCalledExactlyOnceWith({
+    type: "chooseDimension",
+    dimension: "dimension-2",
+    random: zero,
+  });
+});
+
+test("Reset dispatches reset", async () => {
+  const { user, dispatch } = setUp(appDeck, boardAfter(appDeck, ...mixed));
+  await user.click(screen.getByRole("button", { name: "Reset" }));
+  expect(dispatch).toHaveBeenCalledExactlyOnceWith({
+    type: "reset",
+    random: zero,
+  });
+});
+
+test("a press on a card dispatches nothing and no card reads Selected", async () => {
+  const { user, dispatch } = setUp(appDeck, boardAfter(appDeck));
+  await user.click(screen.getByRole("button", { name: afterLoad[0] }));
+  cleanup();
+  const after = setUp(appDeck, boardAfter(appDeck, ...mixed));
+  await after.user.click(screen.getByRole("button", { name: afterChoose[3] }));
+  await after.user.click(screen.getByRole("button", { name: right1 }));
+  await after.user.keyboard("{Enter}");
+  expect(dispatch).not.toHaveBeenCalled();
+  expect(after.dispatch).not.toHaveBeenCalled();
+  expect(screen.queryByText("Selected")).toBeNull();
+  expect(cardsIn("Unsorted")).toEqual(afterChoose.slice(3));
+});
+
+test("Check is a switch that shows whether it is on, is never disabled and dispatches toggleCheck", async () => {
+  const { user, dispatch } = setUp(appDeck, boardAfter(appDeck));
+  const off = screen.getByRole("switch", { name: "Check" });
+  expect(off.tagName).toBe("BUTTON");
+  expect(off).toHaveAttribute("type", "button");
+  expect(off).toHaveAttribute("aria-checked", "false");
+  expect(off).toBeEnabled();
+  await user.click(off);
+  expect(dispatch).toHaveBeenCalledExactlyOnceWith({ type: "toggleCheck" });
+  cleanup();
+  const on = setUp(appDeck, boardAfter(appDeck, toggleCheck));
+  const check = screen.getByRole("switch", { name: "Check" });
+  expect(check).toHaveAttribute("aria-checked", "true");
+  expect(check).toBeEnabled();
+  await on.user.click(check);
+  expect(on.dispatch).toHaveBeenCalledExactlyOnceWith({ type: "toggleCheck" });
+});
+
+test("no hint stands beside Check", () => {
+  for (const board of [
+    boardAfter(appDeck),
+    boardAfter(appDeck, ...mixed),
+    boardAfter(appDeck, ...mixed, toggleCheck),
+  ]) {
+    setUp(appDeck, board);
+    const check = screen.getByRole("switch", { name: "Check" });
+    expect(check).toHaveTextContent(/^Check$/);
+    let next = check.nextElementSibling;
+    if (next?.textContent === "Retry") next = next.nextElementSibling;
+    expect(next).toHaveAttribute("aria-live", "polite");
+    expect(next?.nextElementSibling).toBeNull();
+    expect(screen.queryByText("Place every card to check")).toBeNull();
+    cleanup();
+  }
+});
+
+test("while Check is on, each card in a zone shows Correct or Incorrect and no card in the pool shows either", () => {
+  setUp(appDeck, boardAfter(appDeck, ...mixed, toggleCheck));
+  for (const [card, mark, word, icon] of [
+    [right1, "correct", "Correct", "✓"],
+    [wrong1, "incorrect", "Incorrect", "✕"],
+    [right2, "correct", "Correct", "✓"],
+  ]) {
+    const zone = mark === "correct" ? answer(card) : wrongFor(card);
+    const button = within(region(zone)).getByRole("button", {
+      name: `${card} ${word}`,
+    });
+    expect(button).toHaveAttribute("data-mark", mark);
+    expect(within(button).getByText(icon)).toHaveAttribute(
+      "aria-hidden",
+      "true",
+    );
+  }
+  expect(cardsIn("Unsorted")).toEqual(afterChoose.slice(3));
+  for (const card of within(region("Unsorted")).getAllByRole("button"))
+    expect(card).not.toHaveAttribute("data-mark");
+});
+
+test("while Check is off, no card shows Correct or Incorrect", () => {
+  setUp(appDeck, boardAfter(appDeck, ...mixed));
+  expect(document.querySelector("[data-mark]")).toBeNull();
+  expect(screen.queryByText("Correct")).toBeNull();
+  expect(screen.queryByText("Incorrect")).toBeNull();
+  expect(screen.queryByText(/[✓✕]/)).toBeNull();
+  expect(cardsIn(habitatCategories[0]).length).toBeGreaterThan(0);
+});
+
+test("an incorrect card shows its name, the icon and Incorrect, and no category", () => {
+  setUp(appDeck, boardAfter(appDeck, ...mixed, toggleCheck));
+  const button = screen.getByRole("button", { name: `${wrong1} Incorrect` });
+  expect(button).toHaveTextContent(`${wrong1} ✕Incorrect`, {
+    normalizeWhitespace: false,
+  });
+  for (const category of habitatCategories)
+    expect(button.textContent).not.toContain(category);
+});
+
+// Platypus has no answer under Habitat, so it bears the no-answer mark there,
+// while every card of `appDeck` has an answer under each dimension.
+const partial: Deck = {
+  id: "deck-2",
+  name: "Animals",
+  dimensions: [
+    {
+      id: "habitat",
+      name: "Habitat",
+      categories: [
+        { id: "ocean", name: "Ocean" },
+        { id: "forest", name: "Forest" },
+      ],
+    },
+  ],
+  cards: [
+    { id: "shark", name: "Shark", answers: { habitat: "ocean" } },
+    { id: "deer", name: "Deer", answers: { habitat: "forest" } },
+    { id: "platypus", name: "Platypus", answers: {} },
+    { id: "owl", name: "Owl", answers: { habitat: "forest" } },
+  ],
+};
+
+test("a card with no answer under the chosen dimension shows No answer in the pool and in a zone, with Check on and off", () => {
+  for (const [where, actions] of [
+    ["Unsorted", [choose("habitat")]],
+    ["Unsorted", [choose("habitat"), toggleCheck]],
+    ["Ocean", [choose("habitat"), place("platypus", "ocean")]],
+    ["Ocean", [choose("habitat"), place("platypus", "ocean"), toggleCheck]],
+  ] as const) {
+    setUp(partial, boardAfter(partial, ...actions));
+    const card = within(region(where)).getByRole("button", {
+      name: "Platypus No answer",
+    });
+    expect(card).toHaveAttribute("data-mark", "noAnswer");
+    expect(card).toHaveTextContent("Platypus ?No answer", {
+      normalizeWhitespace: false,
+    });
+    expect(within(card).getByText("?")).toHaveAttribute("aria-hidden", "true");
+    expect(screen.getAllByText("No answer")).toHaveLength(1);
+    cleanup();
+  }
+});
+
+test("the score reads the correct cards over the cards judged while Check is on and a card lies in a zone", () => {
+  setUp(
+    partial,
+    boardAfter(
+      partial,
+      choose("habitat"),
+      place("shark", "ocean"),
+      place("deer", "ocean"),
+      place("platypus", "forest"),
+      toggleCheck,
+    ),
+  );
+  const score = screen.getByText("1 of 2 correct");
+  expect(score.closest("[aria-live]")).toHaveAttribute("aria-live", "polite");
+  expect(cardsIn("Unsorted")).toEqual(["Owl"]);
+  cleanup();
+  setUp(appDeck, boardAfter(appDeck, ...mixed, toggleCheck));
+  expect(screen.getByText("2 of 3 correct")).toBeInTheDocument();
+});
+
+test("no score shows while Check is off or no card lies in a zone", () => {
+  for (const board of [
+    boardAfter(appDeck, ...mixed),
+    boardAfter(appDeck, toggleCheck),
+    boardAfter(appDeck, choose(habitat.id), toggleCheck),
+  ]) {
+    setUp(appDeck, board);
+    const live = document.querySelector('[aria-live="polite"]');
+    expect(live).toBeInTheDocument();
+    expect(live).toBeEmptyDOMElement();
+    expect(screen.queryByText(/ of \d+ correct$/)).toBeNull();
+    cleanup();
+  }
+});
+
+test("Retry shows only while Check is on and a card in a zone is incorrect, and dispatches retry", async () => {
+  for (const board of [
+    boardAfter(appDeck),
+    boardAfter(appDeck, ...mixed),
+    boardAfter(appDeck, toggleCheck),
+    boardAfter(
+      appDeck,
+      choose(habitat.id),
+      place(right1, answer(right1)),
+      toggleCheck,
+    ),
+  ]) {
+    setUp(appDeck, board);
+    expect(screen.queryByRole("button", { name: "Retry" })).toBeNull();
+    cleanup();
+  }
+  const { user, dispatch } = setUp(
+    appDeck,
+    boardAfter(appDeck, ...mixed, toggleCheck),
+  );
+  const retry = screen.getByRole("button", { name: "Retry" });
+  expect(retry).toBeEnabled();
+  await user.click(retry);
+  expect(dispatch).toHaveBeenCalledExactlyOnceWith({
+    type: "retry",
+    random: zero,
+  });
 });

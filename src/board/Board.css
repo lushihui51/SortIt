@@ -28,20 +28,48 @@
   cursor: pointer;
 }
 
-.board-action:disabled {
-  color: var(--color-label);
-  cursor: default;
+.board-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--gap);
 }
 
-.board-hint,
+/* The switch's track, its knob at the start while Check is off and at the end
+   while it is on. */
+.board-switch-track {
+  position: relative;
+  flex: none;
+  width: var(--switch-track-width);
+  height: var(--switch-track-height);
+  border-radius: calc(var(--switch-track-height) / 2);
+  background: var(--color-switch-off);
+}
+
+.board-switch-track::after {
+  content: "";
+  position: absolute;
+  top: var(--switch-knob-inset);
+  left: var(--switch-knob-inset);
+  width: var(--switch-knob-size);
+  height: var(--switch-knob-size);
+  border-radius: 50%;
+  background: var(--color-switch-knob);
+}
+
+.board-switch[aria-checked="true"] .board-switch-track {
+  background: var(--color-switch-on);
+}
+
+.board-switch[aria-checked="true"] .board-switch-track::after {
+  left: calc(
+    var(--switch-track-width) - var(--switch-knob-size) -
+      var(--switch-knob-inset)
+  );
+}
+
 .board-score {
   margin: 0;
-  color: var(--color-label);
-}
-
-.board-score {
   font-weight: 600;
-  color: var(--color-text);
 }
 
 .board-reset:focus-visible,

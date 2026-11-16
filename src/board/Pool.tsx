@@ -1,22 +1,17 @@
 import { useDroppable } from "@dnd-kit/core";
 import { useId } from "react";
 import type { Card as CardModel } from "../../convex/model/deck";
-import type { Mark } from "./legacyBoard";
+import type { Mark } from "./board";
 import Card from "./Card";
 import "./Pool.css";
 
 export type PoolProps = {
   /** The cards shown here, in the order shown. */
   cards: readonly CardModel[];
-  /** The selected card's id; null while no card is selected. */
-  selected: string | null;
   /** The mark of each card that bears one, keyed by card id; a card with no entry is unmarked. */
   marks: Record<string, Mark>;
-  /** Disables every card shown here. */
+  /** Keeps every card shown here from being dragged. */
   disabled: boolean;
-  /** Called with the pressed card's id. */
-  onPressCard: (card: string) => void;
-  onPressLabel: () => void;
 };
 
 /**
@@ -24,14 +19,7 @@ export type PoolProps = {
  * dropped on it is placed in the pool, so it must be rendered inside the
  * board's `DndContext`.
  */
-export default function Pool({
-  cards,
-  selected,
-  marks,
-  disabled,
-  onPressCard,
-  onPressLabel,
-}: PoolProps) {
+export default function Pool({ cards, marks, disabled }: PoolProps) {
   const labelId = useId();
   const { setNodeRef, isOver } = useDroppable({
     id: "pool",
@@ -43,22 +31,15 @@ export default function Pool({
       aria-labelledby={labelId}
       className={isOver ? "pool pool-over" : "pool"}
     >
-      <button
-        type="button"
-        id={labelId}
-        className="pool-label"
-        onClick={onPressLabel}
-      >
+      <span id={labelId} className="pool-label">
         Unsorted
-      </button>
+      </span>
       {cards.map((card) => (
         <Card
           key={card.id}
           card={card}
-          selected={card.id === selected}
           mark={marks[card.id] ?? null}
           disabled={disabled}
-          onPress={onPressCard}
         />
       ))}
     </section>

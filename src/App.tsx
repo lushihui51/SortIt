@@ -1,6 +1,10 @@
-import Board from "./board/Board";
-import { appDeck } from "./deck/appDeck";
+import { BoardsProvider } from "./board/BoardsProvider";
+import AppDeckScreen from "./screens/AppDeckScreen";
 
 export default function App() {
-  return <Board deck={appDeck} />;
+  return (
+    <BoardsProvider>
+      <AppDeckScreen />
+    </BoardsProvider>
+  );
 }

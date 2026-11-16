@@ -185,7 +185,7 @@ export function shuffle<T>(list: readonly T[], random: RandomSource): T[];
 
 **Status**
 
-- [ ]
+- [x]
 
 **Goal**
 
@@ -330,7 +330,19 @@ export default function AppDeckScreen(): ReactElement | null;
 
 **Debrief**
 
-None.
+- Evidence, the first criterion: `npx vitest run src/board/ --reporter=verbose` lists each of the 5 named tests of src/board/BoardsProvider.test.tsx with ✓, and the file holds no other test.
+- Evidence, the second criterion: the same run lists each of the 16 named tests of src/board/Board.test.tsx with ✓, and the file holds no other test; it also lists all 27 tests of src/board/board.test.ts with ✓. `npm test` prints `Test Files  7 passed (7)` and `Tests  62 passed (62)`.
+- Evidence, the third criterion: `git ls-files src/board/legacyBoard.ts` prints nothing; the file's removal is staged by `git rm`.
+- Evidence, the fourth criterion: the `git grep` prints nothing and exits 1.
+- Evidence, the fifth criterion: the `git grep -c` prints `src/board/BoardsProvider.tsx:3`.
+- Evidence, the sixth criterion: `grep -Fx` finds each of the six rows of the Details, taken from this file, as a line of docs/vocabulary.md, and the `grep -c` prints `0`.
+- `npm run typecheck` and `npm run build` exit 0.
+- Seen beyond the Done when: at 1440×900 in headless Chromium driven by mouse events, three cards dragged from the pool landed in their zones with Check on, showing two Incorrect and one Correct, Retry and `1 of 3 correct`; the bar reads the picker, Reset, Check, Retry, the score; the switch measures a 32px by 18px track and a 14px knob, at the left on `#c9c2b4` while off and at the right on `#1f2328` while on, as drawings 7 and 1 show. Turning Check off removed the marks, Retry and the score. This does not replace the engineer's checks by hand (ADR 018).
+- Departure: the interface comments of `BoardsProvider` and `useDeckBoard` differ from the Details' block. `BoardsProvider`'s says what a caller gets, every board kept for each `useDeckBoard` inside it and in memory alone, in place of the `useReducer` that holds them, which is how the body works. `useDeckBoard`'s adds that it must be called inside `BoardsProvider` and throws outside it, and that two decks with one id share a board.
+- Departure: the guidance's sizes and colours of the switch are custom properties in src/index.css as given, with one more, `--switch-knob-inset`, the knob's 2px from the track's edge computed from the track's height and the knob's size.
+- The class that marks a card that cannot be dragged is `card-locked`.
+- Read `useDeckBoard` in src/board/BoardsProvider.tsx: one layout effect dispatches `load` while the deck has no board, and a second keeps the deck in a ref, so the dispatch, one function for the life of the screen, carries the deck the hook was last given even when called from a handler of an earlier render. The test `the dispatch of useDeckBoard applies an action to its own deck's board` proves it by placing a card, through a dispatch taken before the deck gained a category, into that category.
+- Read the tests the Judgement names in src/board/BoardsProvider.test.tsx: `useDeckBoard keeps a deck's board while its screen unmounts and mounts again` unmounts the screen under one provider, mounts it again with another random source, and asserts that no render returned null and the board is the same object; `useDeckBoard keeps one board for each deck id` asserts two decks keep two boards, and that a second deck object with the first one's id gets the first one's board, the same object.
 
 ### T3 — Card's ⓘ and its panel
 

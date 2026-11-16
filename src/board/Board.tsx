@@ -5,17 +5,18 @@ import {
   useSensors,
   type Announcements,
   type DragEndEvent,
-  type DragStartEvent,
 } from "@dnd-kit/core";
-import { useMemo, useReducer, type ReactElement } from "react";
+import { useMemo, type ReactElement } from "react";
 import type { Card, Deck } from "../../convex/model/deck";
 import {
-  createBoardReducer,
-  emptyBoard,
+  markOf,
   score,
+  type BoardState,
+  type Mark,
   type Place,
   type RandomSource,
-} from "./legacyBoard";
+} from "./board";
+import type { DeckBoardAction } from "./BoardsProvider";
 import DimensionPicker from "./DimensionPicker";
 import Pool from "./Pool";
 import Zone from "./Zone";
@@ -32,41 +33,45 @@ const silence: Announcements = {
 
 export type BoardProps = {
   deck: Deck;
-  /** Draws every shuffle of the cards. */
+  /** The deck's board, fitted to `deck`. */
+  board: BoardState;
+  dispatch: (action: DeckBoardAction) => void;
+  /** Draws the shuffle of Reset, of Retry and of a change of dimension. */
   random?: RandomSource;
 };
 
 /**
- * The board over `deck`: the picker, Reset, Check, Retry, the score, the pool
- * and the zones of the chosen dimension. It loads with every card in the pool and no dimension
- * chosen, and reads `deck` only when it first renders.
+ * The board over `deck`: the picker, Reset, the Check switch, Retry, the
+ * score, the pool and the zones of the chosen dimension, showing `board` and
+ * sending every act on it to `dispatch`. It must be given `board` fitted to
+ * `deck`.
  */
 export default function Board({
   deck,
+  board,
+  dispatch,
   random = Math.random,
 }: BoardProps): ReactElement {
-  const reducer = useMemo(() => createBoardReducer(deck), [deck]);
   const cardsById = useMemo(
     () => new Map(deck.cards.map((card) => [card.id, card])),
     [deck],
   );
-  const [state, dispatch] = useReducer(reducer, emptyBoard, (board) =>
-    reducer(board, { type: "load", random }),
-  );
-  const disabled = state.dimension === null;
-  const canCheck =
-    !disabled &&
-    state.order.every((card) => state.places[card].kind !== "pool");
-  const canRetry = Object.values(state.marks).includes("incorrect");
-  const verdict = score(state);
+  const marks: Record<string, Mark> = {};
+  for (const card of board.order) {
+    const mark = markOf(board, deck, card);
+    if (mark !== null) marks[card] = mark;
+  }
+  const disabled = board.dimension === null;
+  const canRetry = Object.values(marks).includes("incorrect");
+  const verdict = score(board, deck);
   const categories =
-    deck.dimensions.find((dimension) => dimension.id === state.dimension)
+    deck.dimensions.find((dimension) => dimension.id === board.dimension)
       ?.categories ?? [];
 
   function cardsIn(place: Place): Card[] {
-    return state.order
+    return board.order
       .filter((card) => {
-        const at = state.places[card];
+        const at = board.places[card];
         return place.kind === "pool"
           ? at.kind === "pool"
           : at.kind === "zone" && at.category === place.category;
@@ -79,25 +84,11 @@ export default function Board({
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
   );
 
-  function dragStart(event: DragStartEvent) {
-    dispatch({ type: "dragStart", card: String(event.active.id) });
-  }
-
   function dragEnd(event: DragEndEvent) {
     const place = (event.over?.data.current as { place: Place } | undefined)
       ?.place;
     if (place !== undefined) {
       dispatch({ type: "place", card: String(event.active.id), place });
-    }
-  }
-
-  function select(card: string) {
-    dispatch({ type: "select", card });
-  }
-
-  function send(place: Place) {
-    if (state.selected !== null) {
-      dispatch({ type: "place", card: state.selected, place });
     }
   }
 
@@ -108,22 +99,13 @@ export default function Board({
         announcements: silence,
         screenReaderInstructions: { draggable: "" },
       }}
-      onDragStart={dragStart}
       onDragEnd={dragEnd}
-      onDragCancel={() => {}}
     >
-      <div
-        className="board"
-        onKeyDown={(event) => {
-          if (event.key === "Escape" && state.selected !== null) {
-            select(state.selected);
-          }
-        }}
-      >
+      <div className="board">
         <div className="board-bar">
           <DimensionPicker
             dimensions={deck.dimensions}
-            chosen={state.dimension}
+            chosen={board.dimension}
             onChoose={(dimension) =>
               dispatch({ type: "chooseDimension", dimension, random })
             }
@@ -137,40 +119,37 @@ export default function Board({
           </button>
           <button
             type="button"
-            className="board-action"
-            disabled={!canCheck}
-            onClick={() => dispatch({ type: "check" })}
+            role="switch"
+            aria-checked={board.checking}
+            className="board-action board-switch"
+            onClick={() => dispatch({ type: "toggleCheck" })}
           >
+            <span className="board-switch-track" aria-hidden="true" />
             Check
           </button>
-          {!canCheck && (
-            <span className="board-hint">Place every card to check</span>
+          {canRetry && (
+            <button
+              type="button"
+              className="board-action"
+              onClick={() => dispatch({ type: "retry", random })}
+            >
+              Retry
+            </button>
           )}
-          <button
-            type="button"
-            className="board-action"
-            disabled={!canRetry}
-            onClick={() => dispatch({ type: "retry", random })}
-          >
-            Retry
-          </button>
           {/* Always present, so assistive technology reads the score as it
               appears. */}
           <div aria-live="polite">
             {verdict && (
               <p className="board-score">
-                {verdict.correct} of {verdict.total} correct
+                {verdict.correct} of {verdict.judged} correct
               </p>
             )}
           </div>
         </div>
         <Pool
           cards={cardsIn({ kind: "pool" })}
-          selected={state.selected}
-          marks={state.marks}
+          marks={marks}
           disabled={disabled}
-          onPressCard={select}
-          onPressLabel={() => send({ kind: "pool" })}
         />
         <div className="board-zones">
           {disabled ? (
@@ -181,13 +160,8 @@ export default function Board({
                 key={category.id}
                 category={category}
                 cards={cardsIn({ kind: "zone", category: category.id })}
-                selected={state.selected}
-                marks={state.marks}
+                marks={marks}
                 disabled={disabled}
-                onPressCard={select}
-                onPressLabel={() =>
-                  send({ kind: "zone", category: category.id })
-                }
               />
             ))
           )}
