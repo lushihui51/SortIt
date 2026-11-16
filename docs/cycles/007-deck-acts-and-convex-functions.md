@@ -362,7 +362,7 @@ deleteDeck: { deck: string } -> null
 
 **Status**
 
-- [ ]
+- [x]
 
 **Goal**
 
@@ -424,4 +424,11 @@ saveAnswers: { deck: string; dimension: string; answers: { card: string; categor
 
 **Debrief**
 
-None.
+- Done when, the tests: `npx vitest run convex/decks.test.ts --reporter=verbose` lists all 7 named tests with ✓, beside T2's 11, and ends `Tests  18 passed (18)`. Each "each of the" test runs every mutation on a fresh backend holding one deck `deck-1` of two cards, one with an answer, and one dimension of two categories. The test of the nine acts computes the act's own result on that deck and asserts that the `decks` table then holds exactly that deck with owner `user_a`. The refusal test asserts that the mutation returns the refusal the act computes, covering `gone` of each kind, `noName` and `nameTaken`, and that both tables are unchanged. In the test for another learner's deck, `user_a` calls every mutation on `user_b`'s deck; each call rejects and both tables are unchanged. With the write in `applyAct` skipped, the test of the nine acts and the first saveAnswers test fail. The test of a saveAnswers whose every answer is left out compares the whole documents, `_id` and `_creationTime` included, before and after.
+- Done when, every other test: `npm test` reports `Test Files  11 passed (11)` and `Tests  116 passed (116)`.
+- Done when, typecheck: `npm run typecheck` exits 0.
+- Done when, the `npx tsc --ignoreConfig …` command over convex/schema.ts, convex/owned.ts, convex/decks.ts and convex/learners.ts prints nothing and exits 0.
+- The checks run for every commit: `npm test` and `npm run typecheck` as above, and `npm run build` exits 0. `git status` shows convex/_generated/ unchanged.
+- Departure: the shared code is two functions, not one. `applyAct` loads, applies, writes and returns the act's whole result, and `handlerOf` turns it into the handler of the nine acts' mutations. `saveAnswers` calls `applyAct` directly, since its value is `leftOut`, not null.
+- Finding: in convex/decks.test.ts, `actCase` calls convex-test's `mutation` through the type `Mutate`, a cast. convex-test types a call's arguments by a conditional type that a function reference generic in its arguments cannot resolve.
+- Read: `applyAct` in convex/decks.ts, the branch that skips the write when the act returns the deck it was given, the same object. It compares the act's result with the `Deck` it built from the document and handed to the act. That is the branch no test can tell apart from a write of the same deck.
