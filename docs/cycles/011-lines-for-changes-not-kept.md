@@ -106,7 +106,7 @@ export function linesFor(
 
 **Out of scope**
 
-- The line for a rename not kept, `Renaming the <kind> "<Name>" to "<New name>" was not kept.`: an unsettled decision; no act renames yet.
+- The line for a rename not kept, `Renaming the <kind> "<Name>" to "<New name>" was not kept.`: an unsettled decision; the hook sends no rename yet.
 - Keeping `SentAct`s, sending anything, or showing a line: T2 and T3.
 - One line for all changes, a line without its reason, or one line per card of a deleted category: never.
 - A line for a later change to a thing never made that says it was deleted on another device: never (ADR 012).
@@ -174,7 +174,7 @@ export function useNotKept(): {
 };
 ```
 
-- `AppRoutes` must render `NotKeptProvider` around its routes. Outside a `NotKeptProvider`, `useNotKept` must give a `send` whose `settle` does nothing and `useNotKeptLines` must give no line, so that a screen tested without the provider works as before. The task changes no test of the routes: T3's tests of the screens, which render `AppRoutes`, show the provider in place.
+- `AppRoutes` must render `NotKeptProvider` around everything it renders, its routes and whatever it renders in their place while it replaces the address for a segment that ends in no code alike, so that the provider stays mounted until a reload. Outside a `NotKeptProvider`, `useNotKept` must give a `send` whose `settle` does nothing and `useNotKeptLines` must give no line, so that a screen tested without the provider works as before. The task changes no test of the routes: T3's tests of the screens, which render `AppRoutes`, show the provider in place.
 - Every act of `useDeckActs`, `deleteDeck` left out, must build its `SentAct` from the deck or the decks it applied the act to and call `send` with it before sending: the subject with its kind and name, `others` holding the deck for an act on a deck's things and the dimension for an act on a category, `held`, and for Save answers each pair's card and category with their names. The subject of an act that makes a thing bears the name the act gave it, trimmed, as the deck the act returned holds it (ADR 012).
 - When the mutation resolves, the hook must call `settle` with the `Refusal` or the `LeftOut` it resolved with, and with null when it resolved with null or threw.
 - `settle` with a `Refusal` or a `LeftOut` must call `linesFor` with the act's `SentAct`, the value, the things never made as they stand at that moment, and whether any act sent after this one holds the id of this act's subject as its subject, among its `others` or in its `answers`. It must then add the lines it gives to the lines shown and the ids it gives to the things never made. `settle` with null adds nothing (ADR 012).
@@ -257,7 +257,7 @@ export default function Notice(props: { children: ReactNode }): ReactElement;
 notices?: ReactNode;
 ```
 
-- `Notice` must render an element with `role="status"` holding the icon and the line as drawing 9 shows them: the box with its background, border, radius, padding and gap, and the icon's size and colour, each a custom property in src/index.css. The icon is hidden from assistive technology.
+- `Notice` must render an element with `role="status"` holding the icon and the line as drawing 9 shows them: the box with its background, border, radius, padding and gap, and the icon's size and colour, each a custom property in src/index.css. The sizes src/index.css already holds take its properties: `--border-width` for the border's 1px, `--card-radius` for the radius's 6px, `--icon-size` for the icon's 18px, and `--region-padding` and `--board-padding` for the padding's 8px and 12px. The gap's 10px and each colour are new properties. The icon is hidden from assistive technology.
 - `DeckScreen` and `AppDeckScreen` must each pass, as `notices`, one `Notice` for each line `useNotKeptLines` gives, oldest first. `DeckListScreen` must show them at its top under the bar, after its line for a deck that cannot be opened. A screen must call `useNotKeptLines` only where it draws the lines the hook gives, never while it renders nothing, so that a line counts as shown only once the learner can read it. Guidance: each screen calls the hook in a component of its own file that it renders once it has its content.
 - The line "This deck cannot be opened. It may have been deleted, or belong to another account." of `DeckListScreen` must now be a `Notice`, in place of the paragraph it is today, with its words and its rule for going away unchanged. The rule of src/screens/DeckListScreen.css that styled that paragraph goes, no element using it. Its test tells the `Notice` from the paragraph by the icon, which the paragraph did not hold.
 - The tests of this task in src/screens/DeckScreen.test.tsx and src/screens/DeckListScreen.test.tsx must render `AppRoutes`, which holds `NotKeptProvider` and `DeckNotOpenedProvider`, inside `MemoryRouter` and `BoardsProvider`, with `convex/react` and `@clerk/react` mocked, and must raise each line for a change not kept by a mocked mutation that resolves with a refusal: for the board, an act made on a deck's board whose mutation resolves while that board shows; for the list, an act made on a deck's board whose mutation resolves once the list shows. No test of this task mocks src/decks/NotKeptProvider.tsx or calls `useNotKept`.
