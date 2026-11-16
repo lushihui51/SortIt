@@ -28,7 +28,7 @@ Judgement: The engineer runs `npx convex dev` and `npm run dev` against a Clerk 
 
 **Status**
 
-- [ ]
+- [ ] [BLOCKED]
 
 **Goal**
 
@@ -131,7 +131,11 @@ account?: ReactNode;
 
 **Debrief**
 
-None.
+Attempted: installed `@clerk/react` 6.18.8, the latest, and before writing any code checked what `<SignIn routing="virtual" />` does once mounted, by reading `@clerk/react` in node_modules and the `@clerk/ui` package it loads at run time, 1.42.6, the version `clerkUIScriptUrl` in `@clerk/shared`'s dist/loadClerkJsScript.mjs pins for this `@clerk/react`.
+
+Found: `useRoutingProps` in `@clerk/react` passes `routing="virtual"` through unchanged, but `@clerk/ui` 1.42.6 renders every mounted component through `LazyComponentRenderer` in dist/lazyModules/providers.js, which logs that `routing="virtual"` is deprecated with "Use routing=\"hash\" instead.", and then through `Portal` in dist/portal/index.js, which gives `PathRouter` to `routing="path"` and `HashRouter` to every other value, `virtual` included. Only Clerk's own modals, `openSignIn` among them, get `VirtualRouter`. `HashRouter` in dist/router/HashRouter.js moves between steps by setting `window.location.hash`, and `baseNavigate` in dist/router/BaseRouter.js calls it for every step inside the form, without going through `routerPush` or `routerReplace`, so `stayOnPage` never sees these moves. Signing in with an email address and a password goes to the step `factor-one`, and making an account to a step that checks the email address, so each such step changes the address to one ending in a hash such as `#/factor-one` and adds an entry to the browser's history. `RoutingOptions` in `@clerk/shared`'s dist/types/clerk.d.ts accepts only `path` and `hash` for `SignIn`, so `routing="virtual"` also fails `npm run typecheck` without a cast.
+
+Why the file cannot settle it: the Details require `<SignIn />` with `routing="virtual"` in a popover of the app's own, and also that no step of signing in or of making an account changes the address, with `routing="hash"` and `openSignIn` out of scope for good, all by ADR 008, whose Context holds that `routing="virtual"` writes nothing to the address. With the Clerk the app loads, a mounted `SignIn` under any routing writes to the address at the steps after the first, and the one way Clerk offers to keep the address unchanged is a modal of its own, which ADR 008 rejected. Choosing between keeping the address unchanged and keeping Clerk's mounted form in the app's own popover changes ADR 008, which no task can do.
 
 ### T2 — Account button, its menu and "Sign out"
 
