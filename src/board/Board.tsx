@@ -15,7 +15,7 @@ import {
   score,
   type Place,
   type RandomSource,
-} from "./board";
+} from "./legacyBoard";
 import DimensionPicker from "./DimensionPicker";
 import Pool from "./Pool";
 import Zone from "./Zone";

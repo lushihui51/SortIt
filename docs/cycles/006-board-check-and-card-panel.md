@@ -30,7 +30,7 @@ Judgement: The engineer opens the app at `npm run dev` in the desktop versions o
 
 **Status**
 
-- [ ]
+- [x]
 
 **Goal**
 
@@ -174,7 +174,12 @@ export function shuffle<T>(list: readonly T[], random: RandomSource): T[];
 
 **Debrief**
 
-None.
+- Evidence, the first criterion: `npx vitest run src/board/ --reporter=verbose` lists each of the 27 named tests of src/board/board.test.ts with ✓, and the file holds no other test; `npm test` prints `Test Files  6 passed (6)` and `Tests  63 passed (63)`.
+- Evidence, the second criterion: the same run lists all 22 tests of src/board/Board.test.tsx with ✓, and `git diff --quiet HEAD -- src/board/Board.test.tsx` exits 0. That file imports `shuffle` from ./board, which the new file keeps unchanged; src/board/legacyBoard.ts is byte for byte the old src/board/board.ts (`cmp` with `git show HEAD:src/board/board.ts` prints nothing), and the one change to `Board`, `Card` and `Pool` is the path of their import from ./board.
+- `npm run typecheck` and `npm run build` exit 0.
+- Departure: the interface comments differ from the Details' block, the code otherwise exactly as written. The fact that a zone's `category` is a category id sits as a member comment on `category` in `Place` rather than in the comment of `places`, and `Mark`, `BoardAction`, `noBoards`, `boardsReducer`, `fitBoard`, `markOf` and `score` each carry an interface comment saying what a caller needs: what null and `"noAnswer"` mean, which board an action addresses, and that `markOf` and `score` take a fitted board.
+- Departure: `zeros` in the test takes the count of draws, since the decks of the tests hold three to six cards; `fixedRandom` is kept as it was and throws when a test draws more numbers than it expects.
+- Read `fitBoard` and `boardsReducer` in src/board/board.ts: `boardsReducer` fits the stored board before every action but `load` and `toggleCheck`, and compares what it would store with the stored board by `sameBoard`, which decides when the state comes back as the same object. Read the test `no function changes the state, the action, the board or the deck it is given`: it proves the rule by freezing every input deeply, so any write throws, in place of comparing snapshots.
 
 ### T2 — Board as a view, with the Check switch
 

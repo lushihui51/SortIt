@@ -1,7 +1,7 @@
 import { useDroppable } from "@dnd-kit/core";
 import { useId } from "react";
 import type { Card as CardModel } from "../../convex/model/deck";
-import type { Mark } from "./board";
+import type { Mark } from "./legacyBoard";
 import Card from "./Card";
 import "./Pool.css";
 

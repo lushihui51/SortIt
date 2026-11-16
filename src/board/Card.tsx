@@ -1,6 +1,6 @@
 import { useDraggable } from "@dnd-kit/core";
 import type { Card as CardModel } from "../../convex/model/deck";
-import type { Mark } from "./board";
+import type { Mark } from "./legacyBoard";
 import "./Card.css";
 
 export type CardProps = {
