@@ -72,9 +72,14 @@
   --icon-size: 18px;
   /* Smallest width and height of a button on a phone. */
   --hit-size: 44px;
+  --account-button-size: 34px;
+  /* Space between the bottom of the board's bar and the account menu. */
+  --account-menu-offset: 10px;
 
-  /* Layers: a card being dragged passes over every card and region, and the
-     panel and its scrim lie over everything, a card being dragged included. */
+  /* Layers: the account menu lies over the board's resting cards, a card
+     being dragged passes over every card, region and the menu, and the panel
+     and its scrim lie over everything, a card being dragged included. */
+  --layer-menu: 1;
   --layer-dragging: 2;
   --layer-panel: 3;
 }

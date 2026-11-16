@@ -143,7 +143,7 @@ account?: ReactNode;
 
 **Status**
 
-- [ ]
+- [x]
 
 **Goal**
 
@@ -203,7 +203,13 @@ A signed-in learner sees, in place of "Sign in", their profile picture or the fi
 
 **Debrief**
 
-None.
+- `npx vitest run src/account/Account.test.tsx --reporter=verbose` printed ✓ for `shows the account button in place of Sign in while the learner is signed in`, `the account button shows the profile picture of a learner who has one`, `the account button shows the first letter of the email address, in upper case, of a learner with no picture`, `pressing the account button opens a menu with the email address and Sign out, and pressing it again closes the menu` and `Sign out signs the learner out through Clerk`; the last asserts the one call is `signOut({ redirectUrl: window.location.href })`, then shows "Sign in" back once Clerk reports the learner signed out. The same run printed ✓ for four more tests of mine: nothing shows while Clerk has not given the signed-in learner's details, a press outside the menu leaves it open, Escape closes the menu and returns the focus to the account button, and a learner with no email address sees no letter and a menu with "Sign out" alone.
+- `npm test` printed `Test Files  12 passed (12)` and `Tests  130 passed (130)`.
+- `grep -c -F -x` with the three rows of the Details as patterns counted 3 lines of docs/vocabulary.md; they are its last three rows.
+- `npm run typecheck` exited with status 0, and `npm run build` succeeded.
+- The tests mock `@clerk/react`, and `.env.local` still lacks `VITE_CLERK_PUBLISHABLE_KEY`, so the builder never saw a signed-in board. Clerk's code loads from Clerk's CDN, so the builder could not read how `signOut` hands `redirectUrl` to `stayOnPage`. Check these in a browser: no reload on "Sign out", the address and the history unchanged, the board as left, and the picture of a Google account filling the circle. For the layout, the builder screenshotted, at 1440 and 390 wide, a static page in its scratchpad holding the board's bar and pool with the built CSS and the menu open. Both showed the menu over the resting cards, 10px under the bar, its right edge at the board's padding, and a long email address wrapping within that padding at 390 wide.
+- No departure from guidance. Choices the file left open: the menu's open state lives in `AccountButton`, a component inside src/account/Account.tsx that is mounted only while the learner is signed in, so any sign-out, this tab's or another's, closes the menu. The menu's `max-width: 100%` is the bar's width, which is the screen less the board's padding on each side. The new custom properties are `--account-button-size`, `--account-menu-offset` and `--layer-menu` (1). The letter is weight 600, as drawing 1 draws it.
+- Read `AccountButton` in src/account/Account.tsx, for the call of `signOut` and the Escape handling.
 
 ### T3 — Build at the root and Convex deployed by the workflow
 

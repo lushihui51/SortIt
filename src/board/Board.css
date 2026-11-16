@@ -8,7 +8,9 @@
   padding: var(--board-padding);
 }
 
+/* Positioned, so that the account menu at the end of the bar hangs under it. */
 .board-bar {
+  position: relative;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
