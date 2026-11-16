@@ -118,7 +118,7 @@ export function deckIdOf(segment: string): string | null;
 
 **Status**
 
-- [ ]
+- [x]
 
 **Goal**
 
@@ -203,7 +203,12 @@ export function deleteDeckLocally(
 
 **Debrief**
 
-None.
+- `npx vitest run src/decks --reporter=verbose` passed the four tests of src/decks/optimistic.test.ts, each by the name the Done when gives, and a fifth, `deleteDeckLocally changes nothing while the list has not loaded`, for the constraint that each function does nothing while the store has no value for the list. The first test also sets the new deck's own query over a store already holding a value for it.
+- The same run passed the four tests of src/decks/useDeckActs.test.tsx, each by the name the Done when gives, and a fifth, `createDeck takes the learner to have no deck while the list has not loaded`. The tests assert that each mutation is given `createDeckLocally` or `deleteDeckLocally` through `withOptimisticUpdate`, and that the mutation of `createDeck` carries the name as typed, `"  History "`, while the deck returned bears it trimmed.
+- The test of a mutation that throws listens for `unhandledRejection` on `process`, and failed when the hook's `.catch` was replaced by a `.then` for the trial, then passed with the `.catch` restored.
+- `npm run typecheck` exited with status 0. `npm test`: 16 files, 146 tests passed.
+- No departure from guidance: the test's store keys a query by `getFunctionName` of its function with its arguments, `{}` when none are given.
+- Read `useDeckActs` in src/decks/useDeckActs.ts: it returns a new `DeckActs` object, with a new mutation from `withOptimisticUpdate`, at each render, so a screen of T5 or T6 that puts it, or one of its functions, in an effect's dependencies runs that effect at each render.
 
 ### T3 — Guard and the list of decks
 
