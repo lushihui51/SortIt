@@ -184,7 +184,7 @@ export function saveAnswers(
 
 **Status**
 
-- [ ]
+- [x]
 
 **Goal**
 
@@ -344,7 +344,19 @@ deleteDeck: { deck: string } -> null
 
 **Debrief**
 
-None.
+- Done when, convex/decks.test.ts: `npx vitest run convex/decks.test.ts convex/learners.test.ts --reporter=verbose` lists all 11 named tests of convex/decks.test.ts with ✓. Each test that says "writes nothing" reads both tables directly before and after the call and asserts they are equal. In `renameDeck and deleteDeck throw for another learner's deck and write nothing`, learner `user_a` calls on `user_b`'s deck; both calls reject and the tables are unchanged.
+- Done when, convex/learners.test.ts: the same run lists all 4 named tests with ✓ and ends `Tests  16 passed (16)`. `a second startLearner adds nothing` calls a second time with a deck of a new id and a third time with the first deck, both return null, and the tables are unchanged.
+- Done when, src/ and convex/model/: `npm test` reports `Test Files  11 passed (11)` and `Tests  109 passed (109)`, the 93 tests of src/ and convex/model/ among them. They run as two Vitest projects, `app` in jsdom and `convex` in edge-runtime.
+- Done when, typecheck: `npm run typecheck` exits 0. With the line `export const typeErrorProbe: number = "not a number";` added at the end of convex/decks.ts, it prints `convex/decks.ts(88,14): error TS2322: Type 'string' is not assignable to type 'number'.` and exits 1. With the line removed, it exits 0 again.
+- Done when, the `npx tsc --ignoreConfig …` command over convex/schema.ts, convex/owned.ts, convex/decks.ts and convex/learners.ts prints nothing and exits 0.
+- The checks run for every commit: `npm test` and `npm run typecheck` as above, and `npm run build` exits 0.
+- Departure: convex/README.md is not written. Convex 1.50 writes it only when convex/ did not exist before codegen (`doInitConvexFolder` in node_modules/convex/dist/cjs/cli/lib/codegen.js). convex/model/ already existed, so neither `npx convex dev --once` nor `npx convex codegen --init` wrote it, and the Details forbid writing it by hand. `codegen --init` wrote convex/tsconfig.json and left convex/_generated/ byte for byte as `npx convex dev --once` wrote it.
+- Departure: convex/test.setup.ts globs `./**/*.{ts,js}` minus tests, `.d.ts` files and itself. convex-test's documented pattern `./**/!(*.*.*)*.*s` matches no file under Vite 8, and convex-test then fails to find `_generated`.
+- Departure: one test beyond the Done when, `startLearner throws and writes nothing on a first call whose deck's id a deck already holds`, proves the Details' rule on `deckIdTaken` for `startLearner`.
+- Finding: the generated convex/tsconfig.json gives `"lib": ["ES2023", "dom"]`, not the ES2021 that T1's Details state Convex gives. The `npx tsc --ignoreConfig … --target es2021` commands still hold convex/model/ and the four function files to ES2021.
+- Finding: `npx convex dev --once` pushed the schema, its three indexes and the functions to the development deployment `impressive-bullfrog-850`, and added `VITE_CONVEX_URL` and `VITE_CONVEX_SITE_URL` to .env.local. npm skipped esbuild's install script under its allow-scripts setting; esbuild runs anyway from `@esbuild/linux-x64`.
+- Finding: the editor's formatter rewrote vite.config.ts in double quotes, so its diff shows every line changed.
+- Read: convex/owned.ts, the owner helper, and the branch of `renameDeck` in convex/decks.ts that skips the write when the act returns the deck it was given. It compares the act's result with the element of the decks handed to the act, never with the document `ownedDeck` gave.
 
 ### T3 — One mutation per act on a deck's things
 
