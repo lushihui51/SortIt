@@ -5,15 +5,15 @@ import Card from "./Card";
 import "./Pool.css";
 
 export type PoolProps = {
-  /** The item names of the cards shown here, in the order shown. */
-  items: readonly string[];
-  /** The selected card's item name; null while no card is selected. */
+  /** The names of the cards shown here, in the order shown. */
+  cards: readonly string[];
+  /** The selected card's name; null while no card is selected. */
   selected: string | null;
-  /** The mark of each card that bears one, keyed by item name; a card with no entry is unmarked. */
+  /** The mark of each card that bears one, keyed by card name; a card with no entry is unmarked. */
   marks: Record<string, Mark>;
   /** Disables every card shown here. */
   disabled: boolean;
-  onPressCard: (item: string) => void;
+  onPressCard: (card: string) => void;
   onPressLabel: () => void;
 };
 
@@ -23,7 +23,7 @@ export type PoolProps = {
  * board's `DndContext`.
  */
 export default function Pool({
-  items,
+  cards,
   selected,
   marks,
   disabled,
@@ -49,12 +49,12 @@ export default function Pool({
       >
         Unsorted
       </button>
-      {items.map((item) => (
+      {cards.map((card) => (
         <Card
-          key={item}
-          item={item}
-          selected={item === selected}
-          mark={marks[item] ?? null}
+          key={card}
+          card={card}
+          selected={card === selected}
+          mark={marks[card] ?? null}
           disabled={disabled}
           onPress={onPressCard}
         />

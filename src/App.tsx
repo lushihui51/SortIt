@@ -1,6 +1,6 @@
-import Board from './board/Board'
-import { shippedSet } from './set/shippedSet'
+import Board from "./board/Board";
+import { appDeckFile } from "./deck/appDeck";
 
 export default function App() {
-  return <Board set={shippedSet} />
+  return <Board deck={appDeckFile} />;
 }

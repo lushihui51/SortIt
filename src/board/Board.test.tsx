@@ -1,7 +1,7 @@
 import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, expect, test } from "vitest";
-import { shippedSet } from "../set/shippedSet";
+import { appDeckFile } from "../deck/appDeck";
 import Board from "./Board";
 import { shuffle } from "./board";
 
@@ -10,13 +10,13 @@ afterEach(cleanup);
 // With every draw 0, each shuffle is a fixed rotation of the order before it,
 // so every test knows the exact order of the cards after each shuffle.
 const zero = () => 0;
-const names = shippedSet.items.map((item) => item.name);
+const names = appDeckFile.cards.map((card) => card.name);
 const afterLoad = shuffle(names, zero);
 const afterChoose = shuffle(afterLoad, zero);
 
 function setUp() {
   const user = userEvent.setup();
-  render(<Board set={shippedSet} random={zero} />);
+  render(<Board deck={appDeckFile} random={zero} />);
   return user;
 }
 
@@ -32,8 +32,8 @@ function cardsIn(name: string): string[] {
     .map((button) => button.textContent ?? "");
 }
 
-const habitat = shippedSet.dimensions[0];
-const diet = shippedSet.dimensions[1];
+const habitat = appDeckFile.dimensions[0];
+const diet = appDeckFile.dimensions[1];
 
 async function chooseHabitat(user: ReturnType<typeof userEvent.setup>) {
   await user.click(screen.getByRole("button", { name: habitat.name }));
@@ -45,7 +45,7 @@ test("shows every card in the pool, the prompt and no zone before a dimension is
   expect(screen.getByText("Choose how to sort to begin")).toBeInTheDocument();
   expect(screen.getAllByRole("region")).toHaveLength(1);
   expect(screen.getByRole("group", { name: "Sort by" })).toBeInTheDocument();
-  for (const dimension of shippedSet.dimensions) {
+  for (const dimension of appDeckFile.dimensions) {
     expect(
       screen.getByRole("button", { name: dimension.name }),
     ).toHaveAttribute("aria-pressed", "false");
@@ -211,12 +211,12 @@ test("choosing the current dimension again changes nothing", async () => {
   ]);
 });
 
-const answer = (item: string) =>
-  shippedSet.items.find((i) => i.name === item)!.answers[habitat.name];
+const answer = (card: string) =>
+  appDeckFile.cards.find((each) => each.name === card)!.answers[habitat.name];
 
-/** A Habitat category that is not `item`'s answer. */
-const wrongFor = (item: string) =>
-  habitat.categories.find((category) => category !== answer(item))!;
+/** A Habitat category that is not `card`'s answer. */
+const wrongFor = (card: string) =>
+  habitat.categories.find((category) => category !== answer(card))!;
 
 /**
  * Places every card of the pool by click, in the pool's order, into the zone
@@ -226,10 +226,10 @@ async function placeAll(
   user: ReturnType<typeof userEvent.setup>,
   wrong: Record<string, string> = {},
 ) {
-  for (const item of cardsIn("Unsorted")) {
-    await user.click(screen.getByRole("button", { name: item }));
+  for (const card of cardsIn("Unsorted")) {
+    await user.click(screen.getByRole("button", { name: card }));
     await user.click(
-      screen.getByRole("button", { name: wrong[item] ?? answer(item) }),
+      screen.getByRole("button", { name: wrong[card] ?? answer(card) }),
     );
   }
 }
@@ -276,16 +276,16 @@ test("Check marks every card where it lies and shows the score", async () => {
   await placeAll(user, wrongTwo);
   expect(screen.queryByText(/correct$/)).toBeNull();
   await user.click(checkButton());
-  for (const item of names) {
-    const mark = item in wrongTwo ? "incorrect" : "correct";
+  for (const card of names) {
+    const mark = card in wrongTwo ? "incorrect" : "correct";
     const word = mark === "correct" ? "Correct" : "Incorrect";
-    const zone = wrongTwo[item] ?? answer(item);
-    const card = within(region(zone)).getByRole("button", {
-      name: `${item} ${word}`,
+    const zone = wrongTwo[card] ?? answer(card);
+    const button = within(region(zone)).getByRole("button", {
+      name: `${card} ${word}`,
     });
-    expect(card).toHaveAttribute("data-mark", mark);
+    expect(button).toHaveAttribute("data-mark", mark);
     expect(
-      within(card).getByText(mark === "correct" ? "✓" : "✕"),
+      within(button).getByText(mark === "correct" ? "✓" : "✕"),
     ).toHaveAttribute("aria-hidden", "true");
   }
   expect(
@@ -298,13 +298,13 @@ test("an incorrect card shows its name, the icon and Incorrect, and no category"
   await chooseHabitat(user);
   await placeAll(user, wrongTwo);
   await user.click(checkButton());
-  const item = afterChoose[0];
-  const card = screen.getByRole("button", { name: `${item} Incorrect` });
-  expect(card).toHaveTextContent(`${item} ✕Incorrect`, {
+  const card = afterChoose[0];
+  const button = screen.getByRole("button", { name: `${card} Incorrect` });
+  expect(button).toHaveTextContent(`${card} ✕Incorrect`, {
     normalizeWhitespace: false,
   });
   for (const category of habitat.categories)
-    expect(card.textContent).not.toContain(category);
+    expect(button.textContent).not.toContain(category);
 });
 
 test("Retry is disabled while no card is marked incorrect", async () => {
@@ -329,18 +329,18 @@ test("Retry returns only the incorrect cards to the pool, removes their marks an
   await user.click(retryButton());
   expect(cardsIn("Unsorted")).toEqual(
     shuffle(
-      afterChoose.filter((item) => item in wrongTwo),
+      afterChoose.filter((card) => card in wrongTwo),
       zero,
     ),
   );
-  for (const item of Object.keys(wrongTwo))
-    expect(screen.getByRole("button", { name: item })).not.toHaveAttribute(
+  for (const card of Object.keys(wrongTwo))
+    expect(screen.getByRole("button", { name: card })).not.toHaveAttribute(
       "data-mark",
     );
-  for (const item of names.filter((name) => !(name in wrongTwo)))
+  for (const card of names.filter((name) => !(name in wrongTwo)))
     expect(
-      within(region(answer(item))).getByRole("button", {
-        name: `${item} Correct`,
+      within(region(answer(card))).getByRole("button", {
+        name: `${card} Correct`,
       }),
     ).toHaveAttribute("data-mark", "correct");
   expect(screen.queryByText(/ correct$/)).toBeNull();
@@ -354,10 +354,10 @@ test("selecting a correct card removes its mark and the score", async () => {
   await chooseHabitat(user);
   await placeAll(user, wrongTwo);
   await user.click(checkButton());
-  const item = afterChoose[1];
-  await user.click(screen.getByRole("button", { name: `${item} Correct` }));
-  const card = screen.getByRole("button", { name: `${item} Selected` });
-  expect(card).not.toHaveAttribute("data-mark");
+  const card = afterChoose[1];
+  await user.click(screen.getByRole("button", { name: `${card} Correct` }));
+  const button = screen.getByRole("button", { name: `${card} Selected` });
+  expect(button).not.toHaveAttribute("data-mark");
   expect(screen.queryByText(/ correct$/)).toBeNull();
   expect(
     screen.getByRole("button", { name: `${afterChoose[3]} Correct` }),

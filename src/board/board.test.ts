@@ -7,7 +7,7 @@ import {
   score,
   shuffle,
 } from "./board";
-import type { ItemSet } from "../set/itemSet";
+import type { AppDeckFile } from "../deck/appDeckFile";
 
 /** Returns the numbers of `numbers` in turn, and throws once they run out. */
 function fixedRandom(
@@ -26,12 +26,12 @@ function fixedRandom(
 // of four cards rotates the order left by one.
 const zeros = () => fixedRandom([0, 0, 0]);
 
-const set: ItemSet = {
+const deck: AppDeckFile = {
   dimensions: [
     { name: "Habitat", categories: ["Ocean", "Forest"] },
     { name: "Diet", categories: ["Herbivore", "Carnivore"] },
   ],
-  items: [
+  cards: [
     { name: "Shark", answers: { Habitat: "Ocean", Diet: "Carnivore" } },
     { name: "Deer", answers: { Habitat: "Forest", Diet: "Herbivore" } },
     { name: "Whale", answers: { Habitat: "Ocean", Diet: "Carnivore" } },
@@ -39,7 +39,7 @@ const set: ItemSet = {
   ],
 };
 
-const reduce = createBoardReducer(set);
+const reduce = createBoardReducer(deck);
 const pool = { kind: "pool" } as const;
 const zone = (category: string) => ({ kind: "zone", category }) as const;
 const allInPool = { Shark: pool, Deer: pool, Whale: pool, Wolf: pool };
@@ -64,7 +64,7 @@ test("shuffle gives the Fisher-Yates order for a fixed sequence and leaves the l
   expect(list).toEqual(["a", "b", "c", "d", "e"]);
 });
 
-test("load puts every item in the pool in the shuffled order with no dimension and no selection", () => {
+test("load puts every card in the pool in the shuffled order with no dimension and no selection", () => {
   expect(loaded()).toEqual({
     dimension: null,
     places: allInPool,
@@ -85,7 +85,7 @@ test("chooseDimension with the current dimension returns the same state", () => 
   ).toBe(state);
 });
 
-test("chooseDimension with a name the set lacks returns the same state", () => {
+test("chooseDimension with a name the deck lacks returns the same state", () => {
   const state = habitat();
   expect(
     reduce(state, {
@@ -98,8 +98,8 @@ test("chooseDimension with a name the set lacks returns the same state", () => {
 
 test("chooseDimension with another dimension sets it, empties the zones, reshuffles and clears the selection", () => {
   let state = habitat();
-  state = reduce(state, { type: "place", item: "Shark", place: zone("Ocean") });
-  state = reduce(state, { type: "select", item: "Deer" });
+  state = reduce(state, { type: "place", card: "Shark", place: zone("Ocean") });
+  state = reduce(state, { type: "select", card: "Deer" });
   expect(state.order).toEqual(["Whale", "Wolf", "Shark", "Deer"]);
   expect(
     reduce(state, {
@@ -119,14 +119,14 @@ test("chooseDimension with another dimension sets it, empties the zones, reshuff
 /** Habitat chosen, order Whale, Wolf, Shark, Deer, and only Shark in its answer's zone. */
 function placedOneRight(): BoardState {
   let state = habitat();
-  state = reduce(state, { type: "place", item: "Shark", place: zone("Ocean") });
+  state = reduce(state, { type: "place", card: "Shark", place: zone("Ocean") });
   state = reduce(state, {
     type: "place",
-    item: "Whale",
+    card: "Whale",
     place: zone("Forest"),
   });
-  state = reduce(state, { type: "place", item: "Wolf", place: zone("Ocean") });
-  state = reduce(state, { type: "place", item: "Deer", place: zone("Ocean") });
+  state = reduce(state, { type: "place", card: "Wolf", place: zone("Ocean") });
+  state = reduce(state, { type: "place", card: "Deer", place: zone("Ocean") });
   return state;
 }
 
@@ -150,17 +150,17 @@ function checked(): BoardState {
 
 test("select before a dimension is chosen returns the same state", () => {
   const state = loaded();
-  expect(reduce(state, { type: "select", item: "Shark" })).toBe(state);
+  expect(reduce(state, { type: "select", card: "Shark" })).toBe(state);
 });
 
-test("select on an item the board lacks returns the same state", () => {
+test("select on a card the board lacks returns the same state", () => {
   const state = habitat();
-  expect(reduce(state, { type: "select", item: "toString" })).toBe(state);
+  expect(reduce(state, { type: "select", card: "toString" })).toBe(state);
 });
 
 test("select selects the card", () => {
   const state = habitat();
-  expect(reduce(state, { type: "select", item: "Shark" })).toEqual({
+  expect(reduce(state, { type: "select", card: "Shark" })).toEqual({
     ...state,
     selected: "Shark",
   });
@@ -168,13 +168,13 @@ test("select selects the card", () => {
 
 test("select on the selected card clears the selection", () => {
   const state = habitat();
-  const selected = reduce(state, { type: "select", item: "Shark" });
-  expect(reduce(selected, { type: "select", item: "Shark" })).toEqual(state);
+  const selected = reduce(state, { type: "select", card: "Shark" });
+  expect(reduce(selected, { type: "select", card: "Shark" })).toEqual(state);
 });
 
 test("select on another card moves the selection", () => {
-  const selected = reduce(habitat(), { type: "select", item: "Shark" });
-  expect(reduce(selected, { type: "select", item: "Deer" })).toEqual({
+  const selected = reduce(habitat(), { type: "select", card: "Shark" });
+  expect(reduce(selected, { type: "select", card: "Deer" })).toEqual({
     ...selected,
     selected: "Deer",
   });
@@ -182,27 +182,27 @@ test("select on another card moves the selection", () => {
 
 test("dragStart clears the selection", () => {
   const state = habitat();
-  const selected = reduce(state, { type: "select", item: "Shark" });
-  expect(reduce(selected, { type: "dragStart", item: "Deer" })).toEqual(state);
+  const selected = reduce(state, { type: "select", card: "Shark" });
+  expect(reduce(selected, { type: "dragStart", card: "Deer" })).toEqual(state);
 });
 
 test("dragStart with no selection returns the same state", () => {
   const state = habitat();
-  expect(reduce(state, { type: "dragStart", item: "Shark" })).toBe(state);
+  expect(reduce(state, { type: "dragStart", card: "Shark" })).toBe(state);
 });
 
 test("place before a dimension is chosen returns the same state", () => {
   const state = loaded();
   expect(
-    reduce(state, { type: "place", item: "Shark", place: zone("Ocean") }),
+    reduce(state, { type: "place", card: "Shark", place: zone("Ocean") }),
   ).toBe(state);
 });
 
 test("place into a zone of the chosen dimension moves the card and clears the selection", () => {
   const state = habitat();
-  const selected = reduce(state, { type: "select", item: "Shark" });
+  const selected = reduce(state, { type: "select", card: "Shark" });
   expect(
-    reduce(selected, { type: "place", item: "Shark", place: zone("Ocean") }),
+    reduce(selected, { type: "place", card: "Shark", place: zone("Ocean") }),
   ).toEqual({
     ...state,
     places: { ...allInPool, Shark: zone("Ocean") },
@@ -212,14 +212,14 @@ test("place into a zone of the chosen dimension moves the card and clears the se
 test("place into a zone of a category the dimension lacks returns the same state", () => {
   const state = habitat();
   expect(
-    reduce(state, { type: "place", item: "Shark", place: zone("Herbivore") }),
+    reduce(state, { type: "place", card: "Shark", place: zone("Herbivore") }),
   ).toBe(state);
 });
 
-test("place of an item the board lacks returns the same state", () => {
+test("place of a card the board lacks returns the same state", () => {
   const state = habitat();
   expect(
-    reduce(state, { type: "place", item: "Lion", place: zone("Ocean") }),
+    reduce(state, { type: "place", card: "Lion", place: zone("Ocean") }),
   ).toBe(state);
 });
 
@@ -227,10 +227,10 @@ test("place back into the pool moves the card", () => {
   const state = habitat();
   const placed = reduce(state, {
     type: "place",
-    item: "Shark",
+    card: "Shark",
     place: zone("Ocean"),
   });
-  expect(reduce(placed, { type: "place", item: "Shark", place: pool })).toEqual(
+  expect(reduce(placed, { type: "place", card: "Shark", place: pool })).toEqual(
     state,
   );
 });
@@ -238,19 +238,19 @@ test("place back into the pool moves the card", () => {
 test("place where the card already lies, with no selection, returns the same state", () => {
   const placed = reduce(habitat(), {
     type: "place",
-    item: "Shark",
+    card: "Shark",
     place: zone("Ocean"),
   });
   expect(
-    reduce(placed, { type: "place", item: "Shark", place: zone("Ocean") }),
+    reduce(placed, { type: "place", card: "Shark", place: zone("Ocean") }),
   ).toBe(placed);
 });
 
 test("reset returns every card to the pool, reshuffles, clears the selection and keeps the dimension", () => {
   let state = habitat();
-  state = reduce(state, { type: "place", item: "Shark", place: zone("Ocean") });
-  state = reduce(state, { type: "place", item: "Deer", place: zone("Forest") });
-  state = reduce(state, { type: "select", item: "Whale" });
+  state = reduce(state, { type: "place", card: "Shark", place: zone("Ocean") });
+  state = reduce(state, { type: "place", card: "Deer", place: zone("Forest") });
+  state = reduce(state, { type: "select", card: "Whale" });
   expect(reduce(state, { type: "reset", random: zeros() })).toEqual({
     dimension: "Habitat",
     places: allInPool,
@@ -263,7 +263,7 @@ test("reset returns every card to the pool, reshuffles, clears the selection and
 test("check while a card is in the pool returns the same state", () => {
   const state = reduce(habitat(), {
     type: "place",
-    item: "Shark",
+    card: "Shark",
     place: zone("Ocean"),
   });
   expect(reduce(state, { type: "check" })).toBe(state);
@@ -275,7 +275,7 @@ test("check before a dimension is chosen returns the same state", () => {
 });
 
 test("check marks each card correct or incorrect by where it lies and clears the selection", () => {
-  const selected = reduce(placedOneRight(), { type: "select", item: "Wolf" });
+  const selected = reduce(placedOneRight(), { type: "select", card: "Wolf" });
   expect(reduce(selected, { type: "check" })).toEqual({
     dimension: "Habitat",
     places: oneRightPlaces,
@@ -288,7 +288,7 @@ test("check marks each card correct or incorrect by where it lies and clears the
 test("place leaves the marks as they are", () => {
   const state = checked();
   expect(
-    reduce(state, { type: "place", item: "Wolf", place: zone("Forest") }),
+    reduce(state, { type: "place", card: "Wolf", place: zone("Forest") }),
   ).toEqual({ ...state, places: { ...oneRightPlaces, Wolf: zone("Forest") } });
 });
 
@@ -320,7 +320,7 @@ test("retry before Check returns the same state", () => {
 test("select on a marked card removes its mark", () => {
   const state = checked();
   const { Shark: _shark, ...rest } = oneRightMarks;
-  expect(reduce(state, { type: "select", item: "Shark" })).toEqual({
+  expect(reduce(state, { type: "select", card: "Shark" })).toEqual({
     ...state,
     marks: rest,
     selected: "Shark",
@@ -330,7 +330,7 @@ test("select on a marked card removes its mark", () => {
 test("dragStart on a marked card removes its mark", () => {
   const state = checked();
   const { Shark: _shark, ...rest } = oneRightMarks;
-  expect(reduce(state, { type: "dragStart", item: "Shark" })).toEqual({
+  expect(reduce(state, { type: "dragStart", card: "Shark" })).toEqual({
     ...state,
     marks: rest,
   });
@@ -341,7 +341,7 @@ test("dragStart on an unmarked card with no selection returns the same state", (
     type: "retry",
     random: fixedRandom([0, 0]),
   });
-  expect(reduce(state, { type: "dragStart", item: "Wolf" })).toBe(state);
+  expect(reduce(state, { type: "dragStart", card: "Wolf" })).toBe(state);
 });
 
 test("reset removes every mark", () => {
@@ -374,23 +374,23 @@ test("score is null before Check, counts the correct cards over all cards after 
   expect(score(placedOneRight())).toBeNull();
   const state = checked();
   expect(score(state)).toEqual({ correct: 1, total: 4 });
-  expect(score(reduce(state, { type: "select", item: "Wolf" }))).toBeNull();
+  expect(score(reduce(state, { type: "select", card: "Wolf" }))).toBeNull();
 });
 
-test("no action changes the state, the action or the set it is given", () => {
-  const before = structuredClone(set);
+test("no action changes the state, the action or the deck it is given", () => {
+  const before = structuredClone(deck);
   let state = habitat();
   const actions = [
-    { type: "select", item: "Shark" },
-    { type: "place", item: "Shark", place: zone("Ocean") },
-    { type: "select", item: "Deer" },
-    { type: "dragStart", item: "Deer" },
-    { type: "place", item: "Deer", place: pool },
+    { type: "select", card: "Shark" },
+    { type: "place", card: "Shark", place: zone("Ocean") },
+    { type: "select", card: "Deer" },
+    { type: "dragStart", card: "Deer" },
+    { type: "place", card: "Deer", place: pool },
     { type: "reset", random: zeros() },
-    { type: "place", item: "Shark", place: zone("Ocean") },
-    { type: "place", item: "Whale", place: zone("Forest") },
-    { type: "place", item: "Wolf", place: zone("Ocean") },
-    { type: "place", item: "Deer", place: zone("Ocean") },
+    { type: "place", card: "Shark", place: zone("Ocean") },
+    { type: "place", card: "Whale", place: zone("Forest") },
+    { type: "place", card: "Wolf", place: zone("Ocean") },
+    { type: "place", card: "Deer", place: zone("Ocean") },
     { type: "check" },
     { type: "retry", random: fixedRandom([0, 0]) },
     { type: "chooseDimension", dimension: "Diet", random: zeros() },
@@ -404,5 +404,5 @@ test("no action changes the state, the action or the set it is given", () => {
     expect(action).toEqual(actionSnapshot);
     state = next;
   }
-  expect(set).toEqual(before);
+  expect(deck).toEqual(before);
 });

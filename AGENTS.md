@@ -1,7 +1,7 @@
 # Project
 
-- Sort It is a single-page quiz app in which a learner picks a dimension and drags each item of a fixed set into its correct category for that dimension.
-- The product's user is the learner, who sorts the items; the items and dimensions come from one data file in the repository that is edited by hand.
+- Sort It is a single-page quiz app in which a learner picks a dimension and drags each card of a fixed deck into its correct category for that dimension.
+- The product's user is the learner, who sorts the cards; the cards and dimensions come from one data file in the repository that is edited by hand.
 - A drawing's screen is 1440×900, a desktop browser window.
 
 # Commands

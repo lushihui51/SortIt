@@ -3,12 +3,13 @@ import type { Mark } from "./board";
 import "./Card.css";
 
 export type CardProps = {
-  item: string;
+  /** The card's name. */
+  card: string;
   selected: boolean;
   /** The card's verdict from Check; null while the card bears no mark. */
   mark: Mark | null;
   disabled: boolean;
-  onPress: (item: string) => void;
+  onPress: (card: string) => void;
 };
 
 const icons: Record<Mark, string> = { correct: "✓", incorrect: "✕" };
@@ -18,12 +19,12 @@ const words: Record<Mark, string> = {
 };
 
 /**
- * One item of the set as a button; pressing it calls `onPress` with `item`.
- * It is also a draggable whose id is `item`, so it must be rendered inside the
+ * One card of the deck as a button; pressing it calls `onPress` with `card`.
+ * It is also a draggable whose id is `card`, so it must be rendered inside the
  * board's `DndContext`.
  */
 export default function Card({
-  item,
+  card,
   selected,
   mark,
   disabled,
@@ -32,7 +33,7 @@ export default function Card({
   // The draggable's `attributes` are left off the button: they add a role
   // description and a description in words the app never shows.
   const { setNodeRef, listeners, transform, isDragging } = useDraggable({
-    id: item,
+    id: card,
     disabled,
   });
   return (
@@ -46,7 +47,7 @@ export default function Card({
       }
       data-mark={mark ?? undefined}
       disabled={disabled}
-      onClick={() => onPress(item)}
+      onClick={() => onPress(card)}
       style={
         transform
           ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)` }
@@ -54,13 +55,13 @@ export default function Card({
       }
       {...listeners}
     >
-      {item}
+      {card}
       {/* The icon shows the mark beside its colour; the hidden word speaks it,
-          so the spoken name reads "<item> Correct" or "<item> Incorrect". */}
+          so the spoken name reads "<card> Correct" or "<card> Incorrect". */}
       {mark && " "}
       {mark && <span aria-hidden="true">{icons[mark]}</span>}
       {mark && <span className="visually-hidden">{words[mark]}</span>}
-      {/* The space keeps the spoken name "<item> Selected" two words. */}
+      {/* The space keeps the spoken name "<card> Selected" two words. */}
       {selected && " "}
       {selected && <span className="visually-hidden">Selected</span>}
     </button>

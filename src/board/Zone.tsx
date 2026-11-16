@@ -13,7 +13,7 @@ export type ZoneProps = PoolProps & { category: string };
  */
 export default function Zone({
   category,
-  items,
+  cards,
   selected,
   marks,
   disabled,
@@ -39,12 +39,12 @@ export default function Zone({
       >
         {category}
       </button>
-      {items.map((item) => (
+      {cards.map((card) => (
         <Card
-          key={item}
-          item={item}
-          selected={item === selected}
-          mark={marks[item] ?? null}
+          key={card}
+          card={card}
+          selected={card === selected}
+          mark={marks[card] ?? null}
           disabled={disabled}
           onPress={onPressCard}
         />

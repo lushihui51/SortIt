@@ -8,7 +8,7 @@ import {
   type DragStartEvent,
 } from "@dnd-kit/core";
 import { useMemo, useReducer, type ReactElement } from "react";
-import type { ItemSet } from "../set/itemSet";
+import type { AppDeckFile } from "../deck/appDeckFile";
 import {
   createBoardReducer,
   emptyBoard,
@@ -31,37 +31,37 @@ const silence: Announcements = {
 };
 
 export type BoardProps = {
-  set: ItemSet;
+  deck: AppDeckFile;
   /** Draws every shuffle of the cards. */
   random?: RandomSource;
 };
 
 /**
- * The board over `set`: the picker, Reset, Check, Retry, the score, the pool
+ * The board over `deck`: the picker, Reset, Check, Retry, the score, the pool
  * and the zones of the chosen dimension. It loads with every card in the pool and no dimension
- * chosen, and reads `set` only when it first renders.
+ * chosen, and reads `deck` only when it first renders.
  */
 export default function Board({
-  set,
+  deck,
   random = Math.random,
 }: BoardProps): ReactElement {
-  const reducer = useMemo(() => createBoardReducer(set), [set]);
+  const reducer = useMemo(() => createBoardReducer(deck), [deck]);
   const [state, dispatch] = useReducer(reducer, emptyBoard, (board) =>
     reducer(board, { type: "load", random }),
   );
   const disabled = state.dimension === null;
   const canCheck =
     !disabled &&
-    state.order.every((item) => state.places[item].kind !== "pool");
+    state.order.every((card) => state.places[card].kind !== "pool");
   const canRetry = Object.values(state.marks).includes("incorrect");
   const verdict = score(state);
   const categories =
-    set.dimensions.find((dimension) => dimension.name === state.dimension)
+    deck.dimensions.find((dimension) => dimension.name === state.dimension)
       ?.categories ?? [];
 
-  function itemsIn(place: Place): string[] {
-    return state.order.filter((item) => {
-      const at = state.places[item];
+  function cardsIn(place: Place): string[] {
+    return state.order.filter((card) => {
+      const at = state.places[card];
       return place.kind === "pool"
         ? at.kind === "pool"
         : at.kind === "zone" && at.category === place.category;
@@ -74,24 +74,24 @@ export default function Board({
   );
 
   function dragStart(event: DragStartEvent) {
-    dispatch({ type: "dragStart", item: String(event.active.id) });
+    dispatch({ type: "dragStart", card: String(event.active.id) });
   }
 
   function dragEnd(event: DragEndEvent) {
     const place = (event.over?.data.current as { place: Place } | undefined)
       ?.place;
     if (place !== undefined) {
-      dispatch({ type: "place", item: String(event.active.id), place });
+      dispatch({ type: "place", card: String(event.active.id), place });
     }
   }
 
-  function select(item: string) {
-    dispatch({ type: "select", item });
+  function select(card: string) {
+    dispatch({ type: "select", card });
   }
 
   function send(place: Place) {
     if (state.selected !== null) {
-      dispatch({ type: "place", item: state.selected, place });
+      dispatch({ type: "place", card: state.selected, place });
     }
   }
 
@@ -116,7 +116,7 @@ export default function Board({
       >
         <div className="board-bar">
           <DimensionPicker
-            dimensions={set.dimensions.map((dimension) => dimension.name)}
+            dimensions={deck.dimensions.map((dimension) => dimension.name)}
             chosen={state.dimension}
             onChoose={(dimension) =>
               dispatch({ type: "chooseDimension", dimension, random })
@@ -159,7 +159,7 @@ export default function Board({
           </div>
         </div>
         <Pool
-          items={itemsIn({ kind: "pool" })}
+          cards={cardsIn({ kind: "pool" })}
           selected={state.selected}
           marks={state.marks}
           disabled={disabled}
@@ -174,7 +174,7 @@ export default function Board({
               <Zone
                 key={category}
                 category={category}
-                items={itemsIn({ kind: "zone", category })}
+                cards={cardsIn({ kind: "zone", category })}
                 selected={state.selected}
                 marks={state.marks}
                 disabled={disabled}

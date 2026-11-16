@@ -1,23 +1,23 @@
-import type { ItemSet } from "../set/itemSet";
+import type { AppDeckFile } from "../deck/appDeckFile";
 
 /** Returns a number in [0, 1), as Math.random does. */
 export type RandomSource = () => number;
 
 export type Place = { kind: "pool" } | { kind: "zone"; category: string };
 
-/** A card's verdict at Check: whether its zone is the item's answer. */
+/** A card's verdict at Check: whether its zone is the card's answer. */
 export type Mark = "correct" | "incorrect";
 
 export type BoardState = {
   /** The chosen dimension's name; null while none is chosen. */
   dimension: string | null;
-  /** Where each item lies, keyed by item name; holds every item of the set once the board is loaded. */
+  /** Where each card lies, keyed by card name; holds every card of the deck once the board is loaded. */
   places: Record<string, Place>;
-  /** Every item name exactly once; the pool and every zone show their cards in this order. */
+  /** Every card name exactly once; the pool and every zone show their cards in this order. */
   order: string[];
-  /** The mark of each card that bears one, keyed by item name; a card with no entry is unmarked. */
+  /** The mark of each card that bears one, keyed by card name; a card with no entry is unmarked. */
   marks: Record<string, Mark>;
-  /** The selected card's item name; null while no card is selected. */
+  /** The selected card's name; null while no card is selected. */
   selected: string | null;
 };
 
@@ -31,14 +31,14 @@ export type BoardState = {
 export type BoardAction =
   | { type: "load"; random: RandomSource }
   | { type: "chooseDimension"; dimension: string; random: RandomSource }
-  | { type: "select"; item: string }
-  | { type: "dragStart"; item: string }
-  | { type: "place"; item: string; place: Place }
+  | { type: "select"; card: string }
+  | { type: "dragStart"; card: string }
+  | { type: "place"; card: string; place: Place }
   | { type: "check" }
   | { type: "retry"; random: RandomSource }
   | { type: "reset"; random: RandomSource };
 
-/** The board before `load`, which fills it with the set's cards. */
+/** The board before `load`, which fills it with the deck's cards. */
 export const emptyBoard: BoardState = {
   dimension: null,
   places: {},
@@ -86,9 +86,9 @@ function samePlace(a: Place, b: Place): boolean {
 
 function withoutMark(
   marks: Record<string, Mark>,
-  item: string,
+  card: string,
 ): Record<string, Mark> {
-  const { [item]: _removed, ...rest } = marks;
+  const { [card]: _removed, ...rest } = marks;
   return rest;
 }
 
@@ -114,17 +114,17 @@ function sameBoard(a: BoardState, b: BoardState): boolean {
 }
 
 /**
- * Returns the pure reducer of a board over `set`, which never changes `set`.
+ * Returns the pure reducer of a board over `deck`, which never changes `deck`.
  * An action that cannot apply, or that would change nothing, returns the
  * state it was given, the same object.
  */
 export function createBoardReducer(
-  set: ItemSet,
+  deck: AppDeckFile,
 ): (state: BoardState, action: BoardAction) => BoardState {
   function next(state: BoardState, action: BoardAction): BoardState {
     switch (action.type) {
       case "load": {
-        const names = set.items.map((item) => item.name);
+        const names = deck.cards.map((card) => card.name);
         return {
           dimension: null,
           places: allInPool(names),
@@ -136,7 +136,7 @@ export function createBoardReducer(
       case "chooseDimension": {
         if (
           action.dimension === state.dimension ||
-          !set.dimensions.some(
+          !deck.dimensions.some(
             (dimension) => dimension.name === action.dimension,
           )
         ) {
@@ -153,29 +153,29 @@ export function createBoardReducer(
       case "select": {
         if (
           state.dimension === null ||
-          !Object.hasOwn(state.places, action.item)
+          !Object.hasOwn(state.places, action.card)
         ) {
           return state;
         }
         return {
           ...state,
-          marks: withoutMark(state.marks, action.item),
-          selected: state.selected === action.item ? null : action.item,
+          marks: withoutMark(state.marks, action.card),
+          selected: state.selected === action.card ? null : action.card,
         };
       }
       case "dragStart":
         return {
           ...state,
-          marks: withoutMark(state.marks, action.item),
+          marks: withoutMark(state.marks, action.card),
           selected: null,
         };
       case "place": {
-        const dimension = set.dimensions.find(
+        const dimension = deck.dimensions.find(
           (d) => d.name === state.dimension,
         );
         if (
           dimension === undefined ||
-          !Object.hasOwn(state.places, action.item) ||
+          !Object.hasOwn(state.places, action.card) ||
           (action.place.kind === "zone" &&
             !dimension.categories.includes(action.place.category))
         ) {
@@ -183,7 +183,7 @@ export function createBoardReducer(
         }
         return {
           ...state,
-          places: { ...state.places, [action.item]: action.place },
+          places: { ...state.places, [action.card]: action.place },
           selected: null,
         };
       }
@@ -196,10 +196,10 @@ export function createBoardReducer(
           return state;
         }
         const marks: Record<string, Mark> = {};
-        for (const item of set.items) {
-          const place = state.places[item.name];
-          marks[item.name] =
-            place.kind === "zone" && place.category === item.answers[dimension]
+        for (const card of deck.cards) {
+          const place = state.places[card.name];
+          marks[card.name] =
+            place.kind === "zone" && place.category === card.answers[dimension]
               ? "correct"
               : "incorrect";
         }

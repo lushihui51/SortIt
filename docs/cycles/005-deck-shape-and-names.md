@@ -19,7 +19,7 @@ Judgement: The engineer opens the app at `npm run dev` in a desktop browser and 
 
 **Status**
 
-- [ ]
+- [x]
 
 **Goal**
 
@@ -177,7 +177,36 @@ export const appDeck: Deck = toDeck(appDeckFile);
 
 **Debrief**
 
-None.
+Evidence:
+
+- `npx vitest run --reporter=verbose src/deck` listed the three tests of src/deck/toDeck.test.ts under the names the criterion gives, each passed.
+- The same run listed `src/deck/appDeck.test.ts > the app's own deck meets every rule it must meet` as passed.
+- The same run listed the 9 tests of src/deck/findFirstFault.test.ts as passed, and `npx vitest run src/board` printed `Test Files  2 passed (2)` and `Tests  54 passed (54)`. `npm test` printed `Test Files  6 passed (6)` and `Tests  68 passed (68)`: the 65 tests from before the task and the three of src/deck/toDeck.test.ts.
+- `git ls-files src/set` printed nothing, with the six moves staged by `git mv`; the folder src/set is gone from the working tree.
+- The `git grep` for `[iI]tem` printed `src/board/Board.css:1` and `src/board/DimensionPicker.css:1` and nothing else.
+- The `git grep` for `ItemSet|shippedSet|SetFault|validSet|/set/|set\.json` printed nothing and exited 1.
+- The `git grep -w "set"` printed `src/recordCitationGuard.test.ts:1` and nothing else.
+- The `grep` over docs/vocabulary.md printed nothing and exited 1. Each of the four rows, read from this file's Details by a script, is equal to a line of docs/vocabulary.md, which still holds 15 rows.
+- `npm run typecheck` printed `> tsc -b` and nothing else and exited 0, and `npm run build` exited 0. `npx tsc -b --listFiles --force` lists convex/model/deck.ts, so the typecheck reads it with no tsconfig change.
+
+Departures and choices:
+
+- No guidance was departed from: the six files moved by `git mv`, and no tsconfig file changed.
+- src/deck/deck.json was written by `sed` from the committed set.json, so `git diff HEAD -M` shows the one line `"items": [` become `"cards": [`. The session's formatter hook, which runs after an edit by the editing tool, had also put the three Diet categories on one line; that change is not in the file.
+- docs/vocabulary.md and the two lines of AGENTS.md were written by a script, the four rows copied from this file, so that no formatter touches them.
+- The formatter hook rewrote src/App.tsx with double quotes and semicolons, as the rest of src/ is written, so the line importing `Board` changed too.
+- The fields of `BoardAction` that held `item` are `card`; the prop `items` of `Pool` and `Zone` is `cards`; the prop `item` of `Card` is `card`, a string, with the member comment "The card's name."; and `itemsIn` in `Board` is `cardsIn`. Each still holds card names.
+- Three tests of src/board/Board.test.tsx held both a name called `item` and its element called `card`; the name is now `card` and the element `button`. No assertion changed in src/board/Board.test.tsx or src/board/board.test.ts.
+- `DeckFault` of kind `answer` keeps its member comment, with "card" for "item".
+- The second test of src/deck/toDeck.test.ts also holds an answer whose value is no category of its dimension and asserts it is kept as it stands.
+- `toDeck` has an interface comment stating that it does not check the file and that its result is sound only for a file in which `findFirstFault` finds no fault.
+
+What to read:
+
+- `toDeck` in src/deck/toDeck.ts, for the rule on answers: it filters the entries of each card's `answers` by the names of the file's dimensions.
+- `appDeck` in src/deck/appDeck.ts is exported and nothing reads it yet. `toDeck` runs over the shipped file whenever src/deck/appDeck.ts loads, in the app and in two test files, and no test asserts its result for deck.json.
+- The formatter hook reformats src/deck/deck.json whenever the editing tool writes it, which contradicts "nothing else in the file changes" for any later task that edits the file that way.
+- The app was not opened in a browser in this task; the board's evidence is the component tests in jsdom and the build.
 
 ### T2 — Board over a `Deck` by ids
 

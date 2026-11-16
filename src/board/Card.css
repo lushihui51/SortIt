@@ -13,7 +13,7 @@
 }
 
 /* Before a dimension is chosen the pool is the learner's first view of the
-   set, so a disabled card looks like any other but for the cursor. */
+   deck, so a disabled card looks like any other but for the cursor. */
 .card:disabled {
   cursor: default;
 }
