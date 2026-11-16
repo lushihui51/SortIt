@@ -8,8 +8,9 @@ import {
 import userEvent from "@testing-library/user-event";
 import { afterEach, expect, test, vi } from "vitest";
 import type { Deck } from "../../convex/model/deck";
+import type { ActResult } from "../../convex/model/deckActs";
 import { appDeck } from "../deck/appDeck";
-import Board from "./Board";
+import Board, { type BoardActs, type BoardProps } from "./Board";
 import { boardsReducer, noBoards, shuffle, type BoardState } from "./board";
 import type { DeckBoardAction } from "./BoardsProvider";
 
@@ -33,11 +34,63 @@ function boardAfter(deck: Deck, ...actions: DeckBoardAction[]): BoardState {
   return state[deck.id];
 }
 
-function setUp(deck: Deck, board: BoardState) {
+function setUp(deck: Deck, board: BoardState, acts?: BoardActs) {
   const user = userEvent.setup();
-  const dispatch = vi.fn<(action: DeckBoardAction) => void>();
-  render(<Board deck={deck} board={board} dispatch={dispatch} random={zero} />);
+  const dispatch = vi.fn<BoardProps["dispatch"]>();
+  render(
+    <Board
+      deck={deck}
+      board={board}
+      dispatch={dispatch}
+      random={zero}
+      acts={acts}
+    />,
+  );
   return { user, dispatch };
+}
+
+/**
+ * Acts made of `vi.fn()`, each returning the result `results` gives for it,
+ * or else `deck` unchanged.
+ */
+function actsOf(
+  deck: Deck,
+  results: {
+    [Act in keyof BoardActs]?: ReturnType<BoardActs[Act]>;
+  } = {},
+) {
+  const same: ActResult = { ok: true, deck };
+  return {
+    addCard: vi.fn<BoardActs["addCard"]>(() => results.addCard ?? same),
+    addDimension: vi.fn<BoardActs["addDimension"]>(
+      () => results.addDimension ?? same,
+    ),
+    addCategory: vi.fn<BoardActs["addCategory"]>(
+      () => results.addCategory ?? same,
+    ),
+    deleteCard: vi.fn<BoardActs["deleteCard"]>(
+      () => results.deleteCard ?? same,
+    ),
+    deleteDimension: vi.fn<BoardActs["deleteDimension"]>(
+      () => results.deleteDimension ?? same,
+    ),
+    deleteCategory: vi.fn<BoardActs["deleteCategory"]>(
+      () => results.deleteCategory ?? same,
+    ),
+    saveAnswers: vi.fn<BoardActs["saveAnswers"]>(
+      () =>
+        results.saveAnswers ?? {
+          ok: true,
+          deck,
+          leftOut: { cards: [], categories: [] },
+        },
+    ),
+  };
+}
+
+/** The text field whose words are `label`. */
+function field(label: string): HTMLElement {
+  return screen.getByRole("textbox", { name: label });
 }
 
 function region(name: string) {
@@ -542,4 +595,249 @@ test("a pointer press on a card's ⓘ stops at the ⓘ, and one on the card's na
     expect(outside).toHaveBeenCalledOnce();
     cleanup();
   }
+});
+
+// A deck as a learner makes it: first with no card and no dimension, then
+// with cards and still no dimension.
+const empty: Deck = {
+  id: "deck-3",
+  name: "Biology",
+  dimensions: [],
+  cards: [],
+};
+const cardsOnly: Deck = { ...empty, cards: numbered.cards };
+
+const fields = ["New card", "New dimension", "New category"];
+
+test("given no acts, the board shows no field", () => {
+  for (const [deck, board] of [
+    [empty, boardAfter(empty)],
+    [numbered, boardAfter(numbered)],
+    [numbered, boardAfter(numbered, choose("dimension-1"))],
+    [appDeck, boardAfter(appDeck, ...mixed, toggleCheck)],
+  ] as const) {
+    setUp(deck, board);
+    expect(screen.queryByRole("textbox")).toBeNull();
+    for (const label of fields)
+      expect(screen.queryByPlaceholderText(label)).toBeNull();
+    cleanup();
+  }
+});
+
+test("given acts, New card ends the pool, New dimension ends the picker and New category follows the zones only while a dimension is chosen", () => {
+  setUp(numbered, boardAfter(numbered), actsOf(numbered));
+  for (const label of fields.slice(0, 2))
+    expect(field(label)).toHaveAttribute("placeholder", label);
+  let pool = region("Unsorted");
+  expect(pool.lastElementChild).toContainElement(field("New card"));
+  expect(pool.lastElementChild!.previousElementSibling).toBe(
+    cardNamed("Shark"),
+  );
+  let picker = screen.getByRole("group", { name: "Sort by" });
+  expect(picker.lastElementChild).toContainElement(field("New dimension"));
+  expect(picker.lastElementChild!.previousElementSibling).toBe(
+    screen.getByRole("button", { name: "Diet" }),
+  );
+  expect(screen.queryByRole("textbox", { name: "New category" })).toBeNull();
+  expect(screen.getAllByRole("textbox")).toHaveLength(2);
+  cleanup();
+
+  setUp(
+    numbered,
+    boardAfter(numbered, choose("dimension-1")),
+    actsOf(numbered),
+  );
+  pool = region("Unsorted");
+  picker = screen.getByRole("group", { name: "Sort by" });
+  expect(pool.lastElementChild).toContainElement(field("New card"));
+  expect(picker.lastElementChild).toContainElement(field("New dimension"));
+  const zones = screen.getAllByRole("region").slice(1);
+  expect(zones.map((zone) => labelOf(zone).textContent)).toEqual([
+    "Ocean",
+    "Forest",
+  ]);
+  const box = zones.at(-1)!.nextElementSibling!;
+  expect(box).toContainElement(field("New category"));
+  expect(field("New category")).toHaveAttribute("placeholder", "New category");
+  expect(box.nextElementSibling).toBeNull();
+  expect(box.tagName).toBe("DIV");
+  expect(box).not.toHaveAttribute("role");
+  expect(box).toHaveClass("board-new-category");
+  expect(screen.getAllByRole("textbox")).toHaveLength(3);
+});
+
+test("Enter in New card calls addCard with the text as typed", async () => {
+  const added: Deck = {
+    ...numbered,
+    cards: [...numbered.cards, { id: "card-3", name: "Seal", answers: {} }],
+  };
+  const acts = actsOf(numbered, { addCard: { ok: true, deck: added } });
+  const { user, dispatch } = setUp(numbered, boardAfter(numbered), acts);
+  await user.type(field("New card"), "  Seal {Enter}");
+  expect(acts.addCard).toHaveBeenCalledExactlyOnceWith("  Seal ");
+  expect(field("New card")).toHaveValue("");
+  expect(screen.queryByRole("alert")).toBeNull();
+  expect(acts.addDimension).not.toHaveBeenCalled();
+  expect(dispatch).not.toHaveBeenCalled();
+});
+
+test("Enter in New dimension calls addDimension and dispatches chooseDimension for the new dimension with the deck the act returned", async () => {
+  const added: Deck = {
+    ...numbered,
+    dimensions: [
+      ...numbered.dimensions,
+      { id: "dimension-3", name: "Size", categories: [] },
+    ],
+  };
+  const acts = actsOf(numbered, { addDimension: { ok: true, deck: added } });
+  const { user, dispatch } = setUp(
+    numbered,
+    boardAfter(numbered, choose("dimension-1")),
+    acts,
+  );
+  await user.type(field("New dimension"), "Size{Enter}");
+  expect(acts.addDimension).toHaveBeenCalledExactlyOnceWith("Size");
+  expect(dispatch).toHaveBeenCalledExactlyOnceWith(
+    { type: "chooseDimension", dimension: "dimension-3", random: zero },
+    added,
+  );
+  expect(dispatch.mock.calls[0][1]).toBe(added);
+  expect(field("New dimension")).toHaveValue("");
+});
+
+test("Enter in New category calls addCategory with the chosen dimension's id", async () => {
+  const added: Deck = {
+    ...numbered,
+    dimensions: [
+      numbered.dimensions[0],
+      {
+        ...numbered.dimensions[1],
+        categories: [
+          ...numbered.dimensions[1].categories,
+          { id: "category-5", name: "Omnivore" },
+        ],
+      },
+    ],
+  };
+  const acts = actsOf(numbered, { addCategory: { ok: true, deck: added } });
+  const { user, dispatch } = setUp(
+    numbered,
+    boardAfter(numbered, choose("dimension-2")),
+    acts,
+  );
+  await user.type(field("New category"), "Omnivore{Enter}");
+  expect(acts.addCategory).toHaveBeenCalledExactlyOnceWith(
+    "dimension-2",
+    "Omnivore",
+  );
+  expect(field("New category")).toHaveValue("");
+  expect(dispatch).not.toHaveBeenCalled();
+});
+
+test("a refused name shows its words under its field, naming the deck for a card or a dimension and the dimension for a category", async () => {
+  for (const [label, act, typed, refusal, words] of [
+    [
+      "New card",
+      "addCard",
+      "Shark",
+      { refused: "nameTaken", kind: "card", name: "Shark" },
+      'The deck "Animals" already has a card called "Shark".',
+    ],
+    [
+      "New card",
+      "addCard",
+      "  ",
+      { refused: "noName", kind: "card" },
+      "A card needs a name.",
+    ],
+    [
+      "New dimension",
+      "addDimension",
+      "Habitat",
+      { refused: "nameTaken", kind: "dimension", name: "Habitat" },
+      'The deck "Animals" already has a dimension called "Habitat".',
+    ],
+    [
+      "New dimension",
+      "addDimension",
+      " ",
+      { refused: "noName", kind: "dimension" },
+      "A dimension needs a name.",
+    ],
+    [
+      "New category",
+      "addCategory",
+      "Carnivore",
+      { refused: "nameTaken", kind: "category", name: "Carnivore" },
+      'The dimension "Diet" already has a category called "Carnivore".',
+    ],
+    [
+      "New category",
+      "addCategory",
+      "   ",
+      { refused: "noName", kind: "category" },
+      "A category needs a name.",
+    ],
+  ] as const) {
+    const acts = actsOf(numbered, { [act]: { ok: false, refusal } });
+    const { user, dispatch } = setUp(
+      numbered,
+      boardAfter(numbered, choose("dimension-2")),
+      acts,
+    );
+    await user.type(field(label), `${typed}{Enter}`);
+    expect(acts[act]).toHaveBeenCalledOnce();
+    const line = screen.getByRole("alert");
+    expect(line).toHaveTextContent(words, { normalizeWhitespace: false });
+    expect(line.textContent).toBe(words);
+    expect(field(label).nextElementSibling).toBe(line);
+    expect(field(label)).toHaveAccessibleDescription(words);
+    expect(field(label)).toHaveValue(typed);
+    expect(dispatch).not.toHaveBeenCalled();
+    cleanup();
+  }
+
+  // A category whose dimension is gone is no name refused: the field shows
+  // nothing and empties.
+  const acts = actsOf(numbered, {
+    addCategory: {
+      ok: false,
+      refusal: { refused: "gone", kind: "dimension", id: "dimension-2" },
+    },
+  });
+  const { user } = setUp(
+    numbered,
+    boardAfter(numbered, choose("dimension-2")),
+    acts,
+  );
+  await user.type(field("New category"), "Omnivore{Enter}");
+  expect(screen.queryByRole("alert")).toBeNull();
+  expect(field("New category")).toHaveValue("");
+});
+
+test("a deck with no dimension reads Add cards and a dimension to begin", () => {
+  for (const deck of [empty, cardsOnly]) {
+    setUp(deck, boardAfter(deck), actsOf(deck));
+    const prompt = screen.getByText("Add cards and a dimension to begin");
+    expect(prompt).toHaveClass("board-prompt");
+    expect(region("Unsorted").nextElementSibling).toContainElement(prompt);
+    expect(screen.queryByText("Choose how to sort to begin")).toBeNull();
+    expect(screen.getAllByRole("region")).toHaveLength(1);
+    expect(
+      within(screen.getByRole("group", { name: "Sort by" })).queryAllByRole(
+        "button",
+      ),
+    ).toEqual([]);
+    expect(field("New card")).toBeInTheDocument();
+    expect(field("New dimension")).toBeInTheDocument();
+    cleanup();
+  }
+});
+
+test("a deck with a dimension reads Choose how to sort to begin before one is chosen", () => {
+  setUp(numbered, boardAfter(numbered), actsOf(numbered));
+  const prompt = screen.getByText("Choose how to sort to begin");
+  expect(prompt).toHaveClass("board-prompt");
+  expect(region("Unsorted").nextElementSibling).toContainElement(prompt);
+  expect(screen.queryByText("Add cards and a dimension to begin")).toBeNull();
 });

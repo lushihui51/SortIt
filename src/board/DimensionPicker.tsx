@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import type { Dimension } from "../../convex/model/deck";
 import "./DimensionPicker.css";
 
@@ -8,6 +9,8 @@ export type DimensionPickerProps = {
   chosen: string | null;
   /** Called with the pressed dimension's id. */
   onChoose: (dimension: string) => void;
+  /** Shown after the dimensions, as the picker's last thing. */
+  children?: ReactNode;
 };
 
 /**
@@ -18,6 +21,7 @@ export default function DimensionPicker({
   dimensions,
   chosen,
   onChoose,
+  children,
 }: DimensionPickerProps) {
   return (
     <fieldset className="picker">
@@ -33,6 +37,7 @@ export default function DimensionPicker({
           {dimension.name}
         </button>
       ))}
+      {children}
     </fieldset>
   );
 }

@@ -95,6 +95,24 @@
   color: var(--color-label);
 }
 
+/* "New card" in the box of a card, so it reads as the pool's next card. */
+.board-new-card {
+  width: var(--new-card-width);
+  padding: var(--card-padding-block) var(--card-padding-inline);
+  font-size: var(--font-size-small);
+}
+
+/* "New category" alone in a dashed box the size of a zone, where the next
+   zone will stand. */
+.board-new-category {
+  display: flex;
+  align-items: flex-start;
+  min-height: var(--region-min-height);
+  padding: var(--region-padding);
+  border: var(--region-border-width) dashed var(--color-region-border);
+  border-radius: var(--region-radius);
+}
+
 @media (max-width: 720px) {
   .board-zones {
     flex: none;

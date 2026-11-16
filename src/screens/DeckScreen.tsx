@@ -6,13 +6,15 @@ import type { Deck } from "../../convex/model/deck";
 import Account from "../account/Account";
 import Board from "../board/Board";
 import { useDeckBoard } from "../board/BoardsProvider";
+import { useDeckActs } from "../decks/useDeckActs";
 import { deckAddress, deckIdOf } from "../routes/deckAddress";
 import BackToList from "./BackToList";
 import { useDeckNotOpened } from "./DeckNotOpened";
 
 /**
  * The screen of a learner's deck, the one screen that reads a deck from
- * Convex: the board of the deck the address's code names. A deck the learner
+ * Convex: the board of the deck the address's code names, with the acts that
+ * change the deck. A deck the learner
  * cannot open brings the list of decks with the line saying so. It must be
  * rendered at the route `/decks/:segment` inside `BoardsProvider` and
  * `DeckNotOpenedProvider`, for a signed-in learner.
@@ -49,6 +51,7 @@ export default function DeckScreen(): ReactElement | null {
 
 function DeckBoard({ deck }: { deck: Deck }): ReactElement | null {
   const { board, dispatch } = useDeckBoard(deck);
+  const { forDeck } = useDeckActs();
   if (board === null) return null;
   return (
     <Board
@@ -57,6 +60,7 @@ function DeckBoard({ deck }: { deck: Deck }): ReactElement | null {
       dispatch={dispatch}
       account={<Account />}
       back={<BackToList />}
+      acts={forDeck(deck)}
     />
   );
 }

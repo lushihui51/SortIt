@@ -11,20 +11,28 @@ import { deckAddress } from "../routes/deckAddress";
 // No test reaches Convex or Clerk: each test sets whether the learner is
 // signed in, to both alike, the decks the list query gives, and what the
 // deck's own query gives for an id: a deck, null, or undefined while loading.
+// Each mutation sent is kept in `sent` by its function's name.
 const learner = vi.hoisted(() => ({
   signedIn: true,
   decks: [] as Deck[] | undefined,
   deck: (() => undefined) as (id: string) => Deck | null | undefined,
+  sent: [] as { name: string; args: unknown }[],
 }));
 
 vi.mock("convex/react", async () => {
   const { getFunctionName } = await import("convex/server");
-  const mutation = () =>
-    Object.assign(() => Promise.resolve(null), {
-      withOptimisticUpdate() {
-        return mutation();
+  const mutation = (name: string) =>
+    Object.assign(
+      (args: unknown) => {
+        learner.sent.push({ name, args });
+        return Promise.resolve(null);
       },
-    });
+      {
+        withOptimisticUpdate() {
+          return mutation(name);
+        },
+      },
+    );
   return {
     useConvexAuth: () => ({
       isLoading: false,
@@ -38,7 +46,7 @@ vi.mock("convex/react", async () => {
         return learner.deck((args as { id: string }).id);
       return undefined;
     },
-    useMutation: () => mutation(),
+    useMutation: (fn: never) => mutation(getFunctionName(fn)),
   };
 });
 
@@ -93,6 +101,7 @@ beforeEach(() => {
   learner.signedIn = true;
   learner.decks = [animals];
   learner.deck = served(animals);
+  learner.sent = [];
   clerk.openSignIn.mockReset();
 });
 
@@ -264,4 +273,28 @@ test("a deck's board keeps its chosen dimension when the learner goes to the lis
     "false",
   );
   expect(screen.getByRole("region", { name: "Meat" })).toBeInTheDocument();
+});
+
+test("the board of a learner's deck is given the acts of the hook for that deck", async () => {
+  const { user } = renderAt(deckAddress(animals));
+  const newCard = screen.getByRole("textbox", { name: "New card" });
+  await user.type(newCard, "Orca{Enter}");
+  expect(screen.getByRole("alert")).toHaveTextContent(
+    'The deck "Animals" already has a card called "Orca".',
+  );
+  expect(learner.sent).toEqual([]);
+  await user.clear(newCard);
+  await user.type(newCard, "Seal{Enter}");
+  expect(learner.sent).toEqual([
+    {
+      name: "decks:addCard",
+      args: { deck: animals.id, id: expect.any(String), name: "Seal" },
+    },
+  ]);
+  cleanup();
+
+  // The board of the app's own deck takes no acts.
+  renderAt("/");
+  expect(screen.getByText("Shark")).toBeInTheDocument();
+  expect(screen.queryByRole("textbox")).toBeNull();
 });

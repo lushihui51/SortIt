@@ -1,5 +1,5 @@
 import { useDroppable } from "@dnd-kit/core";
-import { useId } from "react";
+import { useId, type ReactNode } from "react";
 import type { Card as CardModel } from "../../convex/model/deck";
 import type { Mark } from "./board";
 import Card from "./Card";
@@ -17,11 +17,17 @@ export type PoolProps = {
 };
 
 /**
- * The pool: a region named by its label "Unsorted", holding its cards. A card
- * dropped on it is placed in the pool, so it must be rendered inside the
- * board's `DndContext`.
+ * The pool: a region named by its label "Unsorted", holding its cards and,
+ * after them, `children`. A card dropped on it is placed in the pool, so it
+ * must be rendered inside the board's `DndContext`.
  */
-export default function Pool({ cards, marks, disabled, onOpen }: PoolProps) {
+export default function Pool({
+  cards,
+  marks,
+  disabled,
+  onOpen,
+  children,
+}: PoolProps & { children?: ReactNode }) {
   const labelId = useId();
   const { setNodeRef, isOver } = useDroppable({
     id: "pool",
@@ -45,6 +51,7 @@ export default function Pool({ cards, marks, disabled, onOpen }: PoolProps) {
           onOpen={onOpen}
         />
       ))}
+      {children}
     </section>
   );
 }

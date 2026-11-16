@@ -224,7 +224,7 @@ export function saveAnswersQuestion(count: number, dimension: string): string;
 
 **Status**
 
-- [ ]
+- [x]
 
 **Goal**
 
@@ -310,7 +310,14 @@ acts?: BoardActs;
 
 **Debrief**
 
-None.
+- `npx vitest run src/board/Board.test.tsx src/screens/DeckScreen.test.tsx --reporter=verbose` shows ✓ for all eight tests of src/board/Board.test.tsx named in Done when. Each test that gives acts builds them with `actsOf`, whose seven acts are `vi.fn()` returning the result the test writes. The test of the three fields' places also checks that New card follows the last card, that New dimension follows the last dimension, and that the New category box is the zones' last child. The refusal test runs `nameTaken` and `noName` for each field with Diet chosen, so a category's refusal names "Diet". It also runs a `gone` refusal of New category, which shows no line and empties the field. Breaking the code made the matching test fail, and each passed again once the code was restored: the dispatch without the deck the act returned, the prompt's check of no dimension, and the category's refusal naming the deck.
+- The same run shows ✓ for `the board of a learner's deck is given the acts of the hook for that deck`. The mock of `convex/react` in src/screens/DeckScreen.test.tsx now records every mutation it sends by its function's name. The test types "Orca" into New card and reads the refusal naming "Animals", with nothing sent. It then types "Seal" and reads `decks:addCard` sent with the deck's id, a new id and "Seal". It also renders `/` and finds no text field on the board of the app's own deck. With `acts={forDeck(deck)}` removed from `DeckScreen`, the test fails.
+- `npm test`: 24 test files passed, 232 tests passed. `npm run typecheck` exits with status 0.
+- A Python check that reads the eight rows from the Details of this task finds each as a whole line of docs/vocabulary.md, and prints `8 True`.
+- I checked the look against drawings 1, 5 and 6 in a scratch Vite page outside the repository, which rendered `Board` with fake acts in headless Chromium at 1440×900 and at 390px wide. Each field stands where the drawings show it. The prompt and the two fields of a deck with no dimension match drawing 5. Each refusal lies over what is under its field, and nothing moves. On a phone, "New card" is 44px high, like a card. The live app with sign-in was not run; that is the engineer's check.
+- No departure from guidance; the Details of this task hold only constraints.
+- Choices the Details leave to the builder: `Pool` and `DimensionPicker` each take their field as `children`. `Pool` takes it in its own signature rather than in `PoolProps`, so `ZoneProps`, which extends `PoolProps`, gains nothing. The classes `board-new-card` and `board-new-category` live in src/board/Board.css, since `Board` makes the fields, and `--new-card-width` is the one new size in src/index.css. The "New category" field is keyed by the chosen dimension, so a refusal naming one dimension, and its typed text, go when another dimension is chosen.
+- Read `makeDimension` and `wordsOf` in src/board/Board.tsx: the first dispatches `chooseDimension` with the deck `addDimension` returned, and the second turns a result into the field's words.
 
 ### T4 — Deleting a card, a dimension or a category
 

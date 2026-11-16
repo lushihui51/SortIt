@@ -86,6 +86,7 @@
   --deck-info-inset: 6px;
   --deck-info-font-size: 15px;
   --new-field-width: 170px;
+  --new-card-width: 150px;
 
   /* Layers: the account menu lies over the board's resting cards, a card
      being dragged passes over every card, region and the menu, the panel

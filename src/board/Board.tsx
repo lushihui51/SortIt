@@ -27,7 +27,9 @@ import type { DeckBoardAction } from "./BoardsProvider";
 import DimensionPicker from "./DimensionPicker";
 import Pool from "./Pool";
 import Zone from "./Zone";
+import NewField from "../ui/NewField";
 import Panel from "../ui/Panel";
+import { refusalWords } from "../words/refusalWords";
 import "./Board.css";
 
 // dnd-kit announces drags and describes draggables in words of its own; the
@@ -69,13 +71,18 @@ export type BoardProps = {
   account?: ReactNode;
   /** Shown at the start of the bar, before "Sort by". */
   back?: ReactNode;
+  /** The acts that change the deck; given only for a learner's own deck. */
+  acts?: BoardActs;
 };
 
 /**
  * The board over `deck`: the picker, Reset, the Check switch, Retry, the
  * score, the pool and the zones of the chosen dimension, showing `board` and
  * sending every act on it to `dispatch`, and the panel of the card whose ⓘ was
- * pressed. It must be given `board` fitted to `deck`.
+ * pressed. Given `acts`, it also shows the fields "New card", "New dimension"
+ * and, while a dimension is chosen, "New category", each of which calls its
+ * act; a new dimension is chosen at once. It must be given `board` fitted to
+ * `deck`.
  */
 export default function Board({
   deck,
@@ -84,6 +91,7 @@ export default function Board({
   random = Math.random,
   account,
   back,
+  acts,
 }: BoardProps): ReactElement {
   const cardsById = useMemo(
     () => new Map(deck.cards.map((card) => [card.id, card])),
@@ -101,9 +109,10 @@ export default function Board({
   const disabled = board.dimension === null;
   const canRetry = Object.values(marks).includes("incorrect");
   const verdict = score(board, deck);
-  const categories =
-    deck.dimensions.find((dimension) => dimension.id === board.dimension)
-      ?.categories ?? [];
+  const chosen = deck.dimensions.find(
+    (dimension) => dimension.id === board.dimension,
+  );
+  const categories = chosen?.categories ?? [];
 
   function cardsIn(place: Place): Card[] {
     return board.order
@@ -129,6 +138,21 @@ export default function Board({
   function closePanel() {
     setOpen(null);
     opener.current?.focus();
+  }
+
+  /** Makes a dimension of `name` by `acts` and chooses it; returns the words the field shows. */
+  function makeDimension(acts: BoardActs, name: string): string | null {
+    const result = acts.addDimension(name);
+    if (result.ok) {
+      const made = result.deck.dimensions.at(-1)!;
+      // The deck the act returned reaches the board only at its next render,
+      // so the choice carries it and clears the board in this same press.
+      dispatch(
+        { type: "chooseDimension", dimension: made.id, random },
+        result.deck,
+      );
+    }
+    return wordsOf(result, deck.name);
   }
 
   function dragEnd(event: DragEndEvent) {
@@ -157,7 +181,14 @@ export default function Board({
             onChoose={(dimension) =>
               dispatch({ type: "chooseDimension", dimension, random })
             }
-          />
+          >
+            {acts && (
+              <NewField
+                label="New dimension"
+                onEnter={(name) => makeDimension(acts, name)}
+              />
+            )}
+          </DimensionPicker>
           <button
             type="button"
             className="board-reset"
@@ -200,25 +231,62 @@ export default function Board({
           marks={marks}
           disabled={disabled}
           onOpen={openPanel}
-        />
+        >
+          {acts && (
+            <NewField
+              label="New card"
+              className="board-new-card"
+              onEnter={(name) => wordsOf(acts.addCard(name), deck.name)}
+            />
+          )}
+        </Pool>
         <div className="board-zones">
-          {disabled ? (
-            <p className="board-prompt">Choose how to sort to begin</p>
+          {chosen === undefined ? (
+            <p className="board-prompt">
+              {deck.dimensions.length === 0
+                ? "Add cards and a dimension to begin"
+                : "Choose how to sort to begin"}
+            </p>
           ) : (
-            categories.map((category) => (
-              <Zone
-                key={category.id}
-                category={category}
-                cards={cardsIn({ kind: "zone", category: category.id })}
-                marks={marks}
-                disabled={disabled}
-                onOpen={openPanel}
-              />
-            ))
+            <>
+              {categories.map((category) => (
+                <Zone
+                  key={category.id}
+                  category={category}
+                  cards={cardsIn({ kind: "zone", category: category.id })}
+                  marks={marks}
+                  disabled={disabled}
+                  onOpen={openPanel}
+                />
+              ))}
+              {acts && (
+                <div className="board-new-category">
+                  {/* Keyed by the dimension, so a refusal naming one
+                      dimension never stays once another is chosen. */}
+                  <NewField
+                    key={chosen.id}
+                    label="New category"
+                    onEnter={(name) =>
+                      wordsOf(acts.addCategory(chosen.id, name), chosen.name)
+                    }
+                  />
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
       {openCard && <Panel heading={openCard.name} onClose={closePanel} />}
     </DndContext>
   );
+}
+
+/**
+ * The words a field shows under it for `result`: those of a name refused,
+ * where `held` names what holds the name, or null for any other result.
+ */
+function wordsOf(result: ActResult, held: string): string | null {
+  if (result.ok) return null;
+  const { refusal } = result;
+  return refusal.refused === "gone" ? null : refusalWords(refusal, held);
 }
