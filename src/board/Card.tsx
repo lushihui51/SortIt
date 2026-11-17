@@ -1,52 +1,53 @@
 import { useDraggable } from "@dnd-kit/core";
+import type { Card as CardModel } from "../../convex/model/deck";
+import InfoButton from "../ui/InfoButton";
 import type { Mark } from "./board";
 import "./Card.css";
 
 export type CardProps = {
-  item: string;
-  selected: boolean;
-  /** The card's verdict from Check; null while the card bears no mark. */
+  card: CardModel;
+  /** The card's mark; null while the card bears none. */
   mark: Mark | null;
+  /** Keeps the card from being dragged. */
   disabled: boolean;
-  onPress: (item: string) => void;
+  /** Called with the card's id and its ⓘ when the ⓘ is pressed. */
+  onOpen: (card: string, opener: HTMLElement) => void;
 };
 
-const icons: Record<Mark, string> = { correct: "✓", incorrect: "✕" };
+const icons: Record<Mark, string> = {
+  correct: "✓",
+  incorrect: "✕",
+  noAnswer: "?",
+};
 const words: Record<Mark, string> = {
   correct: "Correct",
   incorrect: "Incorrect",
+  noAnswer: "No answer",
 };
 
 /**
- * One item of the set as a button; pressing it calls `onPress` with `item`.
- * It is also a draggable whose id is `item`, so it must be rendered inside the
- * board's `DndContext`.
+ * One card of the deck, showing its name, its mark and its ⓘ, moved only by
+ * dragging it. A press on the ⓘ calls `onOpen` and never starts a drag, even
+ * while `disabled`. It is a draggable whose id is the card's id, so it must be
+ * rendered inside the board's `DndContext`.
  */
-export default function Card({
-  item,
-  selected,
-  mark,
-  disabled,
-  onPress,
-}: CardProps) {
-  // The draggable's `attributes` are left off the button: they add a role
-  // description and a description in words the app never shows.
+export default function Card({ card, mark, disabled, onOpen }: CardProps) {
+  // The draggable's `attributes` are left off the card: they would make it
+  // focusable and add a role, a role description and a description in words
+  // the app never shows, and the ⓘ is the card's one focusable part.
   const { setNodeRef, listeners, transform, isDragging } = useDraggable({
-    id: item,
+    id: card.id,
     disabled,
   });
   return (
-    <button
+    <div
       ref={setNodeRef}
-      type="button"
       className={
         "card" +
-        (selected ? " card-selected" : "") +
+        (disabled ? " card-locked" : "") +
         (isDragging ? " card-dragging" : "")
       }
       data-mark={mark ?? undefined}
-      disabled={disabled}
-      onClick={() => onPress(item)}
       style={
         transform
           ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)` }
@@ -54,15 +55,14 @@ export default function Card({
       }
       {...listeners}
     >
-      {item}
+      <span>{card.name}</span>
       {/* The icon shows the mark beside its colour; the hidden word speaks it,
-          so the spoken name reads "<item> Correct" or "<item> Incorrect". */}
+          so a screen reader reads "<card> Correct", "<card> Incorrect" or
+          "<card> No answer". */}
       {mark && " "}
       {mark && <span aria-hidden="true">{icons[mark]}</span>}
       {mark && <span className="visually-hidden">{words[mark]}</span>}
-      {/* The space keeps the spoken name "<item> Selected" two words. */}
-      {selected && " "}
-      {selected && <span className="visually-hidden">Selected</span>}
-    </button>
+      <InfoButton onPress={(button) => onOpen(card.id, button)} />
+    </div>
   );
 }

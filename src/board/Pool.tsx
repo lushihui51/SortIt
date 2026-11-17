@@ -1,35 +1,33 @@
 import { useDroppable } from "@dnd-kit/core";
-import { useId } from "react";
+import { useId, type ReactNode } from "react";
+import type { Card as CardModel } from "../../convex/model/deck";
 import type { Mark } from "./board";
 import Card from "./Card";
 import "./Pool.css";
 
 export type PoolProps = {
-  /** The item names of the cards shown here, in the order shown. */
-  items: readonly string[];
-  /** The selected card's item name; null while no card is selected. */
-  selected: string | null;
-  /** The mark of each card that bears one, keyed by item name; a card with no entry is unmarked. */
+  /** The cards shown here, in the order shown. */
+  cards: readonly CardModel[];
+  /** The mark of each card that bears one, keyed by card id; a card with no entry is unmarked. */
   marks: Record<string, Mark>;
-  /** Disables every card shown here. */
+  /** Keeps every card shown here from being dragged. */
   disabled: boolean;
-  onPressCard: (item: string) => void;
-  onPressLabel: () => void;
+  /** Called with a card's id and its ⓘ when that ⓘ is pressed. */
+  onOpen: (card: string, opener: HTMLElement) => void;
 };
 
 /**
- * The pool: a region named by its label "Unsorted", holding its cards. A card
- * dropped on it is placed in the pool, so it must be rendered inside the
- * board's `DndContext`.
+ * The pool: a region named by its label "Unsorted", holding its cards and,
+ * after them, `children`. A card dropped on it is placed in the pool, so it
+ * must be rendered inside the board's `DndContext`.
  */
 export default function Pool({
-  items,
-  selected,
+  cards,
   marks,
   disabled,
-  onPressCard,
-  onPressLabel,
-}: PoolProps) {
+  onOpen,
+  children,
+}: PoolProps & { children?: ReactNode }) {
   const labelId = useId();
   const { setNodeRef, isOver } = useDroppable({
     id: "pool",
@@ -41,24 +39,19 @@ export default function Pool({
       aria-labelledby={labelId}
       className={isOver ? "pool pool-over" : "pool"}
     >
-      <button
-        type="button"
-        id={labelId}
-        className="pool-label"
-        onClick={onPressLabel}
-      >
+      <span id={labelId} className="pool-label">
         Unsorted
-      </button>
-      {items.map((item) => (
+      </span>
+      {cards.map((card) => (
         <Card
-          key={item}
-          item={item}
-          selected={item === selected}
-          mark={marks[item] ?? null}
+          key={card.id}
+          card={card}
+          mark={marks[card.id] ?? null}
           disabled={disabled}
-          onPress={onPressCard}
+          onOpen={onOpen}
         />
       ))}
+      {children}
     </section>
   );
 }

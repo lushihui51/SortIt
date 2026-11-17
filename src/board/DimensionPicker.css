@@ -25,6 +25,25 @@
   cursor: pointer;
 }
 
+/* As large as its button, so the ⓘ placed against it lands in the button's
+   corner. */
+.picker-item {
+  position: relative;
+  display: flex;
+}
+
+/* Room for the ⓘ that lies in the button's corner. */
+.picker-dimension-info {
+  padding-inline-end: var(--dimension-padding-info);
+}
+
+/* The ⓘ sits as far inside the button's border as a card's sits inside the
+   card's. */
+.picker-info {
+  top: calc(var(--border-width) + var(--info-inset));
+  right: calc(var(--border-width) + var(--info-inset));
+}
+
 .picker-dimension[aria-pressed="true"] {
   background: var(--color-control-pressed);
   color: var(--color-control-pressed-text);

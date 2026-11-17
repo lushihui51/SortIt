@@ -1,0 +1,50 @@
+/* Under :where, so that a caller's single class overrides these rules
+   wherever its stylesheet stands. */
+:where(.new-field) {
+  display: block;
+  width: var(--new-field-width);
+  max-width: 100%;
+  padding: var(--control-padding-block) var(--control-padding-inline);
+  font: inherit;
+  font-size: var(--font-size);
+  color: var(--color-text);
+  background: var(--color-control);
+  border: var(--border-width) dashed var(--color-control-border);
+  border-radius: var(--card-radius);
+}
+
+.new-field::placeholder {
+  color: var(--color-label);
+  opacity: 1;
+}
+
+/* Weightier than a caller's single class, so that its border colour gives
+   way to the focus colour while the field is in use. */
+.new-field:focus {
+  border-style: solid;
+  border-color: var(--color-focus);
+  outline: var(--focus-ring-width) solid var(--color-focus);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/* Laid over what stands under the field, so that nothing moves when it
+   shows, above resting cards and under a card being dragged. It keeps the
+   place it would have in the flow, directly under the field, and the field's
+   wrapper is not positioned, so the line may be wider than the field and
+   wraps at the edge of the nearest positioned ancestor: the screen, or a bar
+   that spans it. */
+.new-field-refusal {
+  position: absolute;
+  z-index: var(--layer-menu);
+  margin: 0;
+  margin-inline-end: var(--board-padding);
+  font-size: var(--font-size-small);
+  color: var(--color-label);
+  background: var(--color-page);
+}
+
+@media (max-width: 720px) {
+  :where(.new-field) {
+    min-height: var(--hit-size);
+  }
+}

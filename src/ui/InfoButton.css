@@ -1,0 +1,26 @@
+/* The ⓘ sits in the upper right corner of what holds it, which must be
+   positioned and leave it room; the character draws its own circle. Under
+   :where, so that a caller's single class overrides these rules wherever its
+   stylesheet stands. */
+:where(.info-button) {
+  position: absolute;
+  top: var(--info-inset);
+  right: var(--info-inset);
+  display: grid;
+  place-items: center;
+  width: var(--info-size);
+  height: var(--info-size);
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--color-control);
+  color: var(--color-label);
+  font-size: var(--info-font-size);
+  line-height: 1;
+  cursor: pointer;
+}
+
+.info-button:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-focus);
+  outline-offset: var(--focus-ring-offset);
+}

@@ -8,7 +8,9 @@
   padding: var(--board-padding);
 }
 
+/* Positioned, so that the account menu at the end of the bar hangs under it. */
 .board-bar {
+  position: relative;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -28,20 +30,56 @@
   cursor: pointer;
 }
 
-.board-action:disabled {
-  color: var(--color-label);
-  cursor: default;
+/* Filled in the colours of a pressed control, so it stands apart from the
+   bar's other buttons as the one that keeps something. */
+.board-save {
+  background: var(--color-control-pressed);
+  color: var(--color-control-pressed-text);
+  border-color: var(--color-control-pressed);
 }
 
-.board-hint,
+.board-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--gap);
+}
+
+/* The switch's track, its knob at the start while Check is off and at the end
+   while it is on. */
+.board-switch-track {
+  position: relative;
+  flex: none;
+  width: var(--switch-track-width);
+  height: var(--switch-track-height);
+  border-radius: calc(var(--switch-track-height) / 2);
+  background: var(--color-switch-off);
+}
+
+.board-switch-track::after {
+  content: "";
+  position: absolute;
+  top: var(--switch-knob-inset);
+  left: var(--switch-knob-inset);
+  width: var(--switch-knob-size);
+  height: var(--switch-knob-size);
+  border-radius: 50%;
+  background: var(--color-switch-knob);
+}
+
+.board-switch[aria-checked="true"] .board-switch-track {
+  background: var(--color-switch-on);
+}
+
+.board-switch[aria-checked="true"] .board-switch-track::after {
+  left: calc(
+    var(--switch-track-width) - var(--switch-knob-size) -
+      var(--switch-knob-inset)
+  );
+}
+
 .board-score {
   margin: 0;
-  color: var(--color-label);
-}
-
-.board-score {
   font-weight: 600;
-  color: var(--color-text);
 }
 
 .board-reset:focus-visible,
@@ -63,6 +101,24 @@
   align-self: start;
   margin: 0;
   color: var(--color-label);
+}
+
+/* "New card" in the box of a card, so it reads as the pool's next card. */
+.board-new-card {
+  width: var(--new-card-width);
+  padding: var(--card-padding-block) var(--card-padding-inline);
+  font-size: var(--font-size-small);
+}
+
+/* "New category" alone in a dashed box the size of a zone, where the next
+   zone will stand. */
+.board-new-category {
+  display: flex;
+  align-items: flex-start;
+  min-height: var(--region-min-height);
+  padding: var(--region-padding);
+  border: var(--region-border-width) dashed var(--color-region-border);
+  border-radius: var(--region-radius);
 }
 
 @media (max-width: 720px) {

@@ -1,29 +1,35 @@
 import { useDroppable } from "@dnd-kit/core";
 import { useId } from "react";
+import type { Category } from "../../convex/model/deck";
+import InfoButton from "../ui/InfoButton";
 import Card from "./Card";
 import "./Zone.css";
 import type { PoolProps } from "./Pool";
 
-export type ZoneProps = PoolProps & { category: string };
+export type ZoneProps = PoolProps & {
+  category: Category;
+  /** Called with the category's id and its ⓘ when that ⓘ is pressed; while absent the label holds no ⓘ. */
+  onOpenCategory?: (category: string, opener: HTMLElement) => void;
+};
 
 /**
- * One zone: a region named by its label, the category's name, holding its
- * cards. A card dropped on it is placed in the zone, so it must be rendered
+ * One zone: a region named by the category's name, holding its cards. Its
+ * label shows the name and, given `onOpenCategory`, the category's ⓘ after
+ * it. A card dropped on it is placed in the zone, so it must be rendered
  * inside the board's `DndContext`.
  */
 export default function Zone({
   category,
-  items,
-  selected,
+  cards,
   marks,
   disabled,
-  onPressCard,
-  onPressLabel,
+  onOpen,
+  onOpenCategory,
 }: ZoneProps) {
   const labelId = useId();
   const { setNodeRef, isOver } = useDroppable({
-    id: `zone:${category}`,
-    data: { place: { kind: "zone", category } },
+    id: `zone:${category.id}`,
+    data: { place: { kind: "zone", category: category.id } },
   });
   return (
     <section
@@ -31,22 +37,22 @@ export default function Zone({
       aria-labelledby={labelId}
       className={isOver ? "zone zone-over" : "zone"}
     >
-      <button
-        type="button"
-        id={labelId}
-        className="zone-label"
-        onClick={onPressLabel}
-      >
-        {category}
-      </button>
-      {items.map((item) => (
+      <div className="zone-label">
+        <span id={labelId}>{category.name}</span>
+        {onOpenCategory && (
+          <InfoButton
+            className="zone-info"
+            onPress={(button) => onOpenCategory(category.id, button)}
+          />
+        )}
+      </div>
+      {cards.map((card) => (
         <Card
-          key={item}
-          item={item}
-          selected={item === selected}
-          mark={marks[item] ?? null}
+          key={card.id}
+          card={card}
+          mark={marks[card.id] ?? null}
           disabled={disabled}
-          onPress={onPressCard}
+          onOpen={onOpen}
         />
       ))}
     </section>

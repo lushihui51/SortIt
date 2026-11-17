@@ -1,0 +1,29 @@
+/* The box and the arrow of Close in the panel. */
+.back-to-list {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: var(--icon-button-size);
+  height: var(--icon-button-size);
+  background: var(--color-control);
+  border: var(--border-width) solid var(--color-control-border);
+  border-radius: var(--card-radius);
+  color: inherit;
+}
+
+.back-to-list svg {
+  width: var(--icon-size);
+  height: var(--icon-size);
+}
+
+.back-to-list:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-focus);
+  outline-offset: var(--focus-ring-offset);
+}
+
+@media (max-width: 720px) {
+  .back-to-list {
+    width: var(--hit-size);
+    height: var(--hit-size);
+  }
+}

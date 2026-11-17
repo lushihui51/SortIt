@@ -9,8 +9,6 @@
   --color-label: #4a4f57;
   --color-card: #fffdf8;
   --color-card-border: #8f887b;
-  --color-card-selected: #fde8b0;
-  --color-card-selected-ring: #b36b00;
   --color-focus: #2f6fd1;
   --color-control: #ffffff;
   --color-control-border: #8f887b;
@@ -19,6 +17,17 @@
   --color-shadow-dragging: rgb(0 0 0 / 0.25);
   --color-correct: #cdebcf;
   --color-incorrect: #f7d0cb;
+  --color-no-answer: #f3e2a9;
+  --color-switch-off: #c9c2b4;
+  --color-switch-on: #1f2328;
+  --color-switch-knob: #ffffff;
+  --color-scrim: rgb(0 0 0 / 0.25);
+  --color-shadow-panel: rgb(0 0 0 / 0.25);
+  /* The colour of an act that deletes. */
+  --color-danger: #a3281a;
+  --color-notice: #fff3cd;
+  --color-notice-border: #b38a00;
+  --color-notice-icon: #8a6d00;
 
   /* Sizes */
   --font-size: 1rem;
@@ -37,15 +46,63 @@
   --region-border-width: 2px;
   --card-padding-block: 0.25rem;
   --card-padding-inline: 0.5rem;
+  /* A card's padding on the side of its ⓘ, which leaves the ⓘ room. */
+  --card-padding-info: 22px;
+  --card-gap: 4px;
+  --info-size: 13px;
+  /* Space between the ⓘ and the card's border, above it and beside it. */
+  --info-inset: 3px;
+  --info-font-size: 13px;
+  /* A dimension's padding on the side of its ⓘ, which leaves the ⓘ room. */
+  --dimension-padding-info: 24px;
   --card-radius: 0.375rem;
   --control-padding-block: 0.375rem;
   --control-padding-inline: 0.75rem;
-  --selected-ring-width: 3px;
   --focus-ring-width: 3px;
   --focus-ring-offset: 5px;
   --shadow-dragging: 0 0.25rem 0.75rem;
+  --switch-track-width: 32px;
+  --switch-track-height: 18px;
+  --switch-knob-size: 14px;
+  /* Space between the knob and the track's edge. */
+  --switch-knob-inset: calc(
+    (var(--switch-track-height) - var(--switch-knob-size)) / 2
+  );
+  --panel-width: 420px;
+  /* Space between the top of the screen and the panel. */
+  --panel-top: 330px;
+  --panel-padding: 1rem;
+  --panel-gap: 0.75rem;
+  --shadow-panel: 0 0.25rem 0.75rem;
+  --font-size-heading: 1.125rem;
+  --icon-button-size: 36px;
+  --icon-size: 18px;
+  /* Space between a notice's icon and its line. */
+  --notice-gap: 10px;
   /* Smallest width and height of a button on a phone. */
   --hit-size: 44px;
+  --account-button-size: 34px;
+  /* Space between the bottom of the board's bar and the account menu. */
+  --account-menu-offset: 10px;
+  --deck-list-width: 640px;
+  --deck-padding: 1rem;
+  /* A deck's padding on the side of its ⓘ, which leaves the ⓘ room. */
+  --deck-padding-info: 40px;
+  --deck-info-size: 15px;
+  /* Space between a deck's ⓘ and the deck's border, above it and beside it. */
+  --deck-info-inset: 6px;
+  --deck-info-font-size: 15px;
+  --new-field-width: 170px;
+  --new-card-width: 150px;
+
+  /* Layers: the account menu lies over the board's resting cards, a card
+     being dragged passes over every card, region and the menu, the panel
+     and its scrim lie over everything else, a card being dragged included,
+     and a question and its scrim lie over the panel. */
+  --layer-menu: 1;
+  --layer-dragging: 2;
+  --layer-panel: 3;
+  --layer-question: 4;
 }
 
 *,
