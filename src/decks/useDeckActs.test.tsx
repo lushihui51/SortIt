@@ -1,8 +1,12 @@
-import { cleanup, renderHook } from "@testing-library/react";
+import { act, cleanup, renderHook } from "@testing-library/react";
+import type { ReactNode } from "react";
+import { MemoryRouter } from "react-router";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import type { Deck } from "../../convex/model/deck";
 import * as acts from "../../convex/model/deckActs";
+import type { LeftOut, Refusal } from "../../convex/model/deckActs";
 import type { BoardActs } from "../board/Board";
+import { NotKeptProvider, useNotKeptLines } from "./NotKeptProvider";
 import {
   actLocally,
   createDeckLocally,
@@ -341,4 +345,223 @@ test("a mutation that throws leaves no unhandled rejection and writes the error 
   expect(consoleError).toHaveBeenCalledWith(deleteError);
   expect(consoleError).toHaveBeenCalledWith(addError);
   expect(document.body).toHaveTextContent(/^$/);
+});
+
+/** The hook and the lines shown, rendered inside the provider inside a router. */
+function renderWithLines() {
+  return renderHook(
+    () => ({ deckActs: useDeckActs(), lines: useNotKeptLines() }),
+    {
+      wrapper: ({ children }: { children: ReactNode }) => (
+        <MemoryRouter>
+          <NotKeptProvider>{children}</NotKeptProvider>
+        </MemoryRouter>
+      ),
+    },
+  );
+}
+
+type Returned = Refusal | LeftOut | null;
+
+/** Has the next call of the mutation of that name return a promise the test resolves or rejects. */
+function waiting(name: string): {
+  resolve(returned: Returned): Promise<void>;
+  reject(error: Error): Promise<void>;
+} {
+  let resolve!: (returned: Returned) => void;
+  let reject!: (error: Error) => void;
+  mutationOf(name).mockReturnValueOnce(
+    new Promise<Returned>((onResolve, onReject) => {
+      resolve = onResolve;
+      reject = onReject;
+    }),
+  );
+  return {
+    resolve: (returned) => act(async () => resolve(returned)),
+    reject: (error) => act(async () => reject(error)),
+  };
+}
+
+/** Has the next call of the mutation of that name resolve with `returned`. */
+function returning(name: string, returned: Returned): void {
+  mutationOf(name).mockResolvedValueOnce(returned);
+}
+
+/** Lets every mutation already resolved settle. */
+function settledAll(): Promise<void> {
+  return act(async () => {});
+}
+
+test("a mutation that returns a refusal adds the line linesFor gives for what the act touched when it was sent", async () => {
+  const { result } = renderWithLines();
+  const deckActs = result.current.deckActs.forDeck(animals);
+  const goneDimension = {
+    refused: "gone",
+    kind: "dimension",
+    id: "d1",
+  } as const;
+  returning("decks:createDeck", {
+    refused: "nameTaken",
+    kind: "deck",
+    name: "History",
+  });
+  returning("decks:addCard", {
+    refused: "nameTaken",
+    kind: "card",
+    name: "Crab",
+  });
+  returning("decks:addDimension", {
+    refused: "nameTaken",
+    kind: "dimension",
+    name: "Diet",
+  });
+  returning("decks:addCategory", goneDimension);
+  returning("decks:deleteCard", { refused: "gone", kind: "card", id: "k1" });
+  returning("decks:deleteDimension", goneDimension);
+  returning("decks:deleteCategory", {
+    refused: "gone",
+    kind: "category",
+    id: "c1",
+  });
+  returning("decks:saveAnswers", goneDimension);
+
+  result.current.deckActs.createDeck("History");
+  deckActs.addCard("Crab");
+  deckActs.addDimension("Diet");
+  deckActs.addCategory("d1", "Air");
+  deckActs.deleteCard("k1");
+  deckActs.deleteDimension("d1");
+  deckActs.deleteCategory("d1", "c1");
+  deckActs.saveAnswers("d1", [{ card: "k2", category: "c2" }]);
+  await settledAll();
+
+  expect(result.current.lines).toEqual([
+    'Your new deck "History" was not kept. You already have a deck called "History".',
+    'Your new card "Crab" was not kept. The deck "Animals" already has a card called "Crab".',
+    'Your new dimension "Diet" was not kept. The deck "Animals" already has a dimension called "Diet".',
+    'Your new category "Air" was not kept. The dimension "Habitat" was deleted on another device.',
+    'Your change to the card "Orca" was not kept. It was deleted on another device.',
+    'Your change to the dimension "Habitat" was not kept. It was deleted on another device.',
+    'Your change to the category "Sea" was not kept. It was deleted on another device.',
+    'Your change to the dimension "Habitat" was not kept. It was deleted on another device.',
+  ]);
+});
+
+test("the names of a line are the deck's when the act was sent, not when its mutation returned", async () => {
+  const { result, rerender } = renderWithLines();
+  const added = waiting("decks:addCard");
+  const deleted = waiting("decks:deleteCategory");
+  result.current.deckActs.forDeck(animals).addCard("Crab");
+  result.current.deckActs.forDeck(animals).deleteCategory("d1", "c1");
+
+  // The deck as kept is renamed, and so are its dimension and category,
+  // before the mutations return.
+  const renamed: Deck = {
+    ...animals,
+    name: "Zoo",
+    dimensions: [
+      {
+        id: "d1",
+        name: "Home",
+        categories: [{ id: "c1", name: "Ocean" }],
+      },
+    ],
+  };
+  convex.decks = [biology, renamed];
+  rerender();
+  await added.resolve({ refused: "nameTaken", kind: "card", name: "Crab" });
+  await deleted.resolve({ refused: "gone", kind: "dimension", id: "d1" });
+
+  expect(result.current.lines).toEqual([
+    'Your new card "Crab" was not kept. The deck "Animals" already has a card called "Crab".',
+    'Your change to the category "Sea" was not kept. The dimension "Habitat" was deleted on another device.',
+  ]);
+});
+
+test("a Save answers that returns ids left out adds a line for each", async () => {
+  const { result } = renderWithLines();
+  returning("decks:saveAnswers", { cards: ["k1"], categories: ["c1"] });
+
+  result.current.deckActs.forDeck(animals).saveAnswers("d1", [
+    { card: "k1", category: "c2" },
+    { card: "k2", category: "c1" },
+  ]);
+  await settledAll();
+
+  expect(result.current.lines).toEqual([
+    'Your answers in the category "Sea" were not kept. It was deleted on another device.',
+    'Your answer for the card "Orca" was not kept. It was deleted on another device.',
+  ]);
+});
+
+test("a later act on a thing whose making was refused adds no line", async () => {
+  const { result } = renderWithLines();
+  const added = waiting("decks:addCard");
+  const deleted = waiting("decks:deleteCard");
+
+  const made = result.current.deckActs.forDeck(animals).addCard("Crab");
+  if (!made.ok) throw new Error("addCard refused Crab.");
+  const crab = made.deck.cards[2].id;
+  result.current.deckActs.forDeck(made.deck).deleteCard(crab);
+  await added.resolve({ refused: "nameTaken", kind: "card", name: "Crab" });
+  await deleted.resolve({ refused: "gone", kind: "card", id: crab });
+
+  expect(result.current.lines).toEqual([
+    'Your new card "Crab" and your later changes to it were not kept. The deck "Animals" already has a card called "Crab".',
+  ]);
+});
+
+test("the subject of a making bears its trimmed name", async () => {
+  const { result } = renderWithLines();
+  returning("decks:createDeck", {
+    refused: "nameTaken",
+    kind: "deck",
+    name: "History",
+  });
+  returning("decks:addCard", {
+    refused: "nameTaken",
+    kind: "card",
+    name: "Crab",
+  });
+  returning("decks:addDimension", {
+    refused: "nameTaken",
+    kind: "dimension",
+    name: "Diet",
+  });
+  returning("decks:addCategory", {
+    refused: "nameTaken",
+    kind: "category",
+    name: "Air",
+  });
+
+  result.current.deckActs.createDeck("  History ");
+  const deckActs = result.current.deckActs.forDeck(animals);
+  deckActs.addCard(" Crab  ");
+  deckActs.addDimension("\tDiet ");
+  deckActs.addCategory("d1", " Air ");
+  await settledAll();
+
+  expect(result.current.lines).toEqual([
+    'Your new deck "History" was not kept. You already have a deck called "History".',
+    'Your new card "Crab" was not kept. The deck "Animals" already has a card called "Crab".',
+    'Your new dimension "Diet" was not kept. The deck "Animals" already has a dimension called "Diet".',
+    'Your new category "Air" was not kept. The dimension "Habitat" already has a category called "Air".',
+  ]);
+});
+
+test("a mutation that returns null or throws adds no line", async () => {
+  vi.spyOn(console, "error").mockImplementation(() => {});
+  const { result } = renderWithLines();
+  const thrown = waiting("decks:deleteCard");
+
+  const deckActs = result.current.deckActs.forDeck(animals);
+  deckActs.addCard("Crab");
+  deckActs.deleteCard("k1");
+  result.current.deckActs.createDeck("History");
+  await settledAll();
+  await thrown.reject(new Error("No deck id-b of the caller."));
+
+  expect(mutationOf("decks:addCard")).toHaveBeenCalledOnce();
+  expect(mutationOf("decks:createDeck")).toHaveBeenCalledOnce();
+  expect(result.current.lines).toEqual([]);
 });

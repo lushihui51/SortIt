@@ -142,7 +142,7 @@ export function linesFor(
 
 **Status**
 
-- [ ]
+- [x]
 
 **Goal**
 
@@ -214,7 +214,13 @@ export function useNotKept(): {
 
 **Debrief**
 
-None.
+- `npx vitest run src/decks/NotKeptProvider.test.tsx src/decks/useDeckActs.test.tsx --reporter=verbose` printed ✓ for each of the 6 tests of src/decks/NotKeptProvider.test.tsx the Done when names, by those names.
+- The same run printed ✓ for each of the 6 new tests of src/decks/useDeckActs.test.tsx the Done when names, by those names, beside the 9 tests the file held before, and "Tests 21 passed (21)".
+- `npm test` printed "Test Files 26 passed (26)" and "Tests 273 passed (273)", and `npm run typecheck` ran `tsc -b && tsc --noEmit -p convex` and exited with status 0.
+- To show the provider's tests can fail, each of these changes to src/decks/NotKeptProvider.tsx, made one at a time and undone, failed at least one named test: a replacement of the address taking shown lines away; no line ever marked shown; `laterChanged` always false; the ids `linesFor` gives never added to the things never made.
+- Departures from guidance: none.
+- Read the `saveAnswers` act in `forDeck` in src/decks/useDeckActs.ts for one choice the file does not settle: a pair whose card the deck does not hold, or whose category the dimension does not hold, is sent but left out of the `SentAct`'s `answers`, since the deck gives it no name. Such an id gives no line when the mutation returns it, as `linesFor` gives none for an id `answers` does not hold. The board never sends such a pair.
+- Read `NotKeptProvider` in src/decks/NotKeptProvider.tsx for how a line counts as shown: `useNotKeptLines` marks each line it returned as shown in an effect after the screen draws it. A move counts only when the path changes and React Router's navigation type is not `REPLACE`, so a new history entry with the same path takes no line away.
 
 ### T3 — Lines at the top of the board and of the list
 
