@@ -18,6 +18,7 @@ type SignInProps = { getContainer?: () => HTMLElement | null };
 // No test reaches Convex: each sets what `useConvexAuth` reports, and the
 // mock of `useQuery` counts, by function name, the components subscribed to
 // a query, as Convex keeps a query subscribed while a component asks for it.
+// Convex's client reports no mutation in flight.
 const convex = vi.hoisted(() => ({
   auth: { isLoading: false, isAuthenticated: false },
   subscribed: new Map<string, number>(),
@@ -49,6 +50,7 @@ vi.mock("convex/react", async () => {
       return skipped ? undefined : [];
     },
     useMutation: () => mutation(),
+    useConvexConnectionState: () => ({ inflightMutations: 0 }),
   };
 });
 

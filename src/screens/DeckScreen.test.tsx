@@ -12,17 +12,21 @@ import { deckAddress } from "../routes/deckAddress";
 // signed in, to both alike, the decks the list query gives, and what the
 // deck's own query gives for an id: a deck, null, or undefined while loading.
 // Each mutation sent is kept in `sent` by its function's name, and resolves
-// with what `reply` gives for that name.
+// with what `reply` gives for that name. Convex's client reports `inflight`
+// mutations in flight, none unless a test sets it through `reportInflight`.
 const learner = vi.hoisted(() => ({
   signedIn: true,
   decks: [] as Deck[] | undefined,
   deck: (() => undefined) as (id: string) => Deck | null | undefined,
   sent: [] as { name: string; args: unknown }[],
   reply: (() => Promise.resolve(null)) as (name: string) => Promise<unknown>,
+  inflight: 0,
+  listeners: new Set<() => void>(),
 }));
 
 vi.mock("convex/react", async () => {
   const { getFunctionName } = await import("convex/server");
+  const { useSyncExternalStore } = await import("react");
   const mutation = (name: string) =>
     Object.assign(
       (args: unknown) => {
@@ -49,8 +53,23 @@ vi.mock("convex/react", async () => {
       return undefined;
     },
     useMutation: (fn: never) => mutation(getFunctionName(fn)),
+    useConvexConnectionState: () => ({
+      inflightMutations: useSyncExternalStore(
+        (listener) => {
+          learner.listeners.add(listener);
+          return () => learner.listeners.delete(listener);
+        },
+        () => learner.inflight,
+      ),
+    }),
   };
 });
+
+/** Has Convex's client report `count` mutations in flight. */
+function reportInflight(count: number) {
+  learner.inflight = count;
+  act(() => learner.listeners.forEach((listener) => listener()));
+}
 
 const clerk = vi.hoisted(() => ({ openSignIn: vi.fn() }));
 
@@ -105,6 +124,7 @@ beforeEach(() => {
   learner.deck = served(animals);
   learner.sent = [];
   learner.reply = () => Promise.resolve(null);
+  learner.inflight = 0;
   clerk.openSignIn.mockReset();
 });
 
@@ -374,5 +394,49 @@ test("the line is gone after the learner goes to the list and opens the deck aga
   expect(path()).toBe(deckAddress(animals));
   expect(screen.getByText("Orca")).toBeInTheDocument();
   expect(screen.queryByText(notKept)).toBeNull();
+  expect(notices()).toEqual([]);
+});
+
+const waitingLine = "Your changes are not saved yet. Keep this page open.";
+
+test("the board shows the waiting line while a change is not yet kept, before the lines for changes not kept, and not otherwise", async () => {
+  const reply = waitingReply("decks:addCard");
+  const { user } = renderAt(deckAddress(animals));
+  expect(notices()).toEqual([]);
+
+  await user.type(
+    screen.getByRole("textbox", { name: "New card" }),
+    "Seal{Enter}",
+  );
+  reportInflight(1);
+  const [waiting, ...more] = notices();
+  expect(more).toEqual([]);
+  expect(waiting).toHaveTextContent(
+    /^Your changes are not saved yet\. Keep this page open\.$/,
+  );
+  expect(waiting.previousElementSibling).toContainElement(
+    screen.getByRole("button", { name: "Reset" }),
+  );
+  expect(waiting.nextElementSibling).toBe(
+    screen.getByRole("region", { name: "Unsorted" }),
+  );
+
+  // The card's mutation returns its refusal while a later change still waits.
+  await reply(sealTaken);
+  expect(notices().map((each) => each.textContent)).toEqual([
+    waitingLine,
+    notKept,
+  ]);
+
+  reportInflight(0);
+  expect(notices().map((each) => each.textContent)).toEqual([notKept]);
+  cleanup();
+
+  // The board of the app's own deck shows it too.
+  renderAt("/");
+  expect(notices()).toEqual([]);
+  reportInflight(2);
+  expect(notices().map((each) => each.textContent)).toEqual([waitingLine]);
+  reportInflight(0);
   expect(notices()).toEqual([]);
 });

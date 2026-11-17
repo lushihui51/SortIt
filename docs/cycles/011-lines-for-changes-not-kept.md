@@ -316,7 +316,7 @@ notices?: ReactNode;
 
 **Status**
 
-- [ ]
+- [x]
 
 **Goal**
 
@@ -377,4 +377,13 @@ export function useChangesWaiting(): boolean;
 
 **Debrief**
 
-None.
+- `npx vitest run src/decks/useChangesWaiting.test.tsx src/screens/DeckScreen.test.tsx src/screens/DeckListScreen.test.tsx --reporter=verbose` printed ✓ for `useChangesWaiting follows what Convex's client reports of mutations in flight`.
+- The same run printed ✓ for `the board shows the waiting line while a change is not yet kept, before the lines for changes not kept, and not otherwise` and `the list shows the waiting line while a change is not yet kept, and not otherwise`, and "Tests 30 passed (30)".
+- `npm test` printed "Test Files 28 passed (28)" and "Tests 282 passed (282)"; `npm run typecheck` exited with status 0.
+- `grep -cxF` of the row the Details gives, read from this file, printed 1 for docs/vocabulary.md and 1 for its last line, the last row of the Area "Saving".
+- `npm run build` exited with status 0.
+- The cycle's Judgement needs two browsers, a cut network and the engineer's accounts, so its checks are the engineer's; the builder's evidence for it is the tests this cycle names, T1's for the words of each line for a change not kept and T4's for the waiting line.
+- To show the new tests can fail, each of these changes, made one at a time and undone, failed at least one named test: `useChangesWaiting` reading `hasInflightRequests` in place of the mutations in flight; the waiting line put after the lines for changes not kept in `DeckScreen`; the same in `DeckListScreen`.
+- Departures from guidance: none. `useChangesWaiting` reads `inflightMutations` of `useConvexConnectionState`, the connection state of Convex's React client.
+- Read `SavingNotices` in each of src/screens/DeckScreen.tsx, src/screens/AppDeckScreen.tsx and src/screens/DeckListScreen.tsx: T3's `NotKeptNotices` is renamed and draws the waiting line first, so each screen holds the words "Your changes are not saved yet. Keep this page open." once, three copies in all.
+- Read the mock of `useConvexConnectionState` in src/screens/DeckScreen.test.tsx and src/screens/DeckListScreen.test.tsx: a test sets the count of mutations in flight through `reportInflight`, and a mutation the mock sends does not change it, so T3's tests, which leave a mutation waiting, still read no waiting line. The test of `useChangesWaiting` gives the real `ConvexProvider` a stand-in client, so the hook goes through Convex's own subscription.

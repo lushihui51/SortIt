@@ -1,11 +1,5 @@
 import "@testing-library/jest-dom/vitest";
-import {
-  act,
-  cleanup,
-  render,
-  screen,
-  within,
-} from "@testing-library/react";
+import { act, cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import {
   Link,
@@ -26,16 +20,21 @@ import { DeckNotOpenedProvider, useDeckNotOpened } from "./DeckNotOpened";
 // No test reaches Convex: each sets the decks the list query gives and what
 // the deck's own query gives for an id, and reads what was sent, each
 // mutation's function name with its arguments. Each mutation resolves with
-// what `reply` gives for its function's name.
+// what `reply` gives for its function's name. Convex's client reports
+// `inflight` mutations in flight, none unless a test sets it through
+// `reportInflight`.
 const convex = vi.hoisted(() => ({
   decks: undefined as Deck[] | undefined,
   deck: (() => null) as (id: string) => Deck | null,
   sent: [] as { name: string; args: unknown }[],
   reply: (() => Promise.resolve(null)) as (name: string) => Promise<unknown>,
+  inflight: 0,
+  listeners: new Set<() => void>(),
 }));
 
 vi.mock("convex/react", async () => {
   const { getFunctionName } = await import("convex/server");
+  const { useSyncExternalStore } = await import("react");
   const mutation = (name: string) =>
     Object.assign(
       (args: unknown) => {
@@ -54,13 +53,27 @@ vi.mock("convex/react", async () => {
       if (args === "skip") return undefined;
       const name = getFunctionName(query);
       if (name === "decks:list") return convex.decks;
-      if (name === "decks:get")
-        return convex.deck((args as { id: string }).id);
+      if (name === "decks:get") return convex.deck((args as { id: string }).id);
       return undefined;
     },
     useMutation: (fn: never) => mutation(getFunctionName(fn)),
+    useConvexConnectionState: () => ({
+      inflightMutations: useSyncExternalStore(
+        (listener) => {
+          convex.listeners.add(listener);
+          return () => convex.listeners.delete(listener);
+        },
+        () => convex.inflight,
+      ),
+    }),
   };
 });
+
+/** Has Convex's client report `count` mutations in flight. */
+function reportInflight(count: number) {
+  convex.inflight = count;
+  act(() => convex.listeners.forEach((listener) => listener()));
+}
 
 // No test reaches Clerk: the learner is signed in.
 vi.mock("@clerk/react", () => ({
@@ -99,6 +112,7 @@ beforeEach(() => {
   convex.deck = (id) => decks.find((deck) => deck.id === id) ?? null;
   convex.sent = [];
   convex.reply = () => Promise.resolve(null);
+  convex.inflight = 0;
 });
 
 afterEach(cleanup);
@@ -267,13 +281,17 @@ test("a refused deck name shows its words under New deck and opens nothing", asy
 
   await user.type(newDeck(), "History{Enter}");
   const taken = screen.getByRole("alert");
-  expect(taken).toHaveTextContent(/^You already have a deck called "History"\.$/);
+  expect(taken).toHaveTextContent(
+    /^You already have a deck called "History"\.$/,
+  );
   expect(newDeck()).toHaveAccessibleDescription(taken.textContent ?? "");
   expect(newDeck()).toHaveValue("History");
 
   await user.clear(newDeck());
   await user.type(newDeck(), "   {Enter}");
-  expect(screen.getByRole("alert")).toHaveTextContent(/^A deck needs a name\.$/);
+  expect(screen.getByRole("alert")).toHaveTextContent(
+    /^A deck needs a name\.$/,
+  );
   expect(newDeck()).toHaveValue("   ");
 
   expect(convex.sent).toHaveLength(0);
@@ -339,8 +357,14 @@ test("Delete asks the question that names the deck and its cards", async () => {
   const user = userEvent.setup();
   renderList();
   for (const [name, asked] of [
-    ["History", 'Delete the deck "History"? 3 cards and their answers will be lost.'],
-    ["Animals", 'Delete the deck "Animals"? 1 card and their answers will be lost.'],
+    [
+      "History",
+      'Delete the deck "History"? 3 cards and their answers will be lost.',
+    ],
+    [
+      "Animals",
+      'Delete the deck "Animals"? 1 card and their answers will be lost.',
+    ],
     ["Biology revision", 'Delete the deck "Biology revision"?'],
   ]) {
     await user.click(infoOf(name));
@@ -463,4 +487,74 @@ test("a line for a change not kept shows at the top of the list, after the line 
   );
   expect(statuses[0].nextElementSibling).toBe(statuses[1]);
   expect(statuses[1].nextElementSibling).toBe(screen.getByRole("list"));
+});
+
+test("the list shows the waiting line while a change is not yet kept, and not otherwise", async () => {
+  const user = userEvent.setup();
+  render(app());
+  expect(screen.queryByRole("status")).toBeNull();
+
+  reportInflight(1);
+  const waiting = screen.getByRole("status");
+  expect(waiting).toHaveTextContent(
+    /^Your changes are not saved yet\. Keep this page open\.$/,
+  );
+  expect(waiting.querySelector("svg")).toHaveAttribute("aria-hidden", "true");
+  expect(waiting.nextElementSibling).toBe(screen.getByRole("list"));
+
+  // It stands after the line for a deck that cannot be opened.
+  await user.click(screen.getByRole("button", { name: "Show the line" }));
+  const statuses = screen.getAllByRole("status");
+  expect(statuses.map((status) => status.textContent)).toEqual([
+    line,
+    "Your changes are not saved yet. Keep this page open.",
+  ]);
+  expect(statuses[0].nextElementSibling).toBe(statuses[1]);
+  expect(statuses[1].nextElementSibling).toBe(screen.getByRole("list"));
+
+  reportInflight(0);
+  expect(
+    screen.getAllByRole("status").map((status) => status.textContent),
+  ).toEqual([line]);
+  cleanup();
+
+  // It stands before the lines for changes not kept: the card made on
+  // History's board returns its refusal once the list shows, while a later
+  // change still waits.
+  const [history] = decks;
+  let resolve: (value: unknown) => void = () => {};
+  convex.reply = (name) =>
+    name === "decks:addCard"
+      ? new Promise((settle) => {
+          resolve = settle;
+        })
+      : Promise.resolve(null);
+  render(
+    <MemoryRouter initialEntries={[deckAddress(history)]}>
+      <BoardsProvider>
+        <main>
+          <AppRoutes />
+        </main>
+      </BoardsProvider>
+    </MemoryRouter>,
+  );
+  await user.type(
+    screen.getByRole("textbox", { name: "New card" }),
+    "Seal{Enter}",
+  );
+  await user.click(
+    screen.getByRole("link", { name: "Back to the list of decks" }),
+  );
+  reportInflight(1);
+  await act(async () =>
+    resolve({ refused: "nameTaken", kind: "card", name: "Seal" }),
+  );
+  expect(
+    within(screen.getByRole("main"))
+      .getAllByRole("status")
+      .map((status) => status.textContent),
+  ).toEqual([
+    "Your changes are not saved yet. Keep this page open.",
+    'Your new card "Seal" was not kept. The deck "History" already has a card called "Seal".',
+  ]);
 });

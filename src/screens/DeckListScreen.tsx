@@ -4,6 +4,7 @@ import { Link, useNavigate } from "react-router";
 import { api } from "../../convex/_generated/api";
 import Account from "../account/Account";
 import { useNotKeptLines } from "../decks/NotKeptProvider";
+import { useChangesWaiting } from "../decks/useChangesWaiting";
 import { useDeckActs } from "../decks/useDeckActs";
 import { deckAddress } from "../routes/deckAddress";
 import InfoButton from "../ui/InfoButton";
@@ -18,8 +19,8 @@ import "./DeckListScreen.css";
 
 /**
  * The list of the learner's decks, under the line that a deck cannot be
- * opened while `useDeckNotOpened` shows it and then the lines for changes not
- * kept, and ended by the "New deck" field, which opens the board of the deck
+ * opened while `useDeckNotOpened` shows it, then the line while changes are not
+ * yet kept and the lines for changes not kept, and ended by the "New deck" field, which opens the board of the deck
  * it makes. Each deck's ⓘ opens its panel, whose Delete deletes the deck once
  * the learner agrees to a question.
  */
@@ -76,7 +77,7 @@ export default function DeckListScreen(): ReactElement | null {
             another account.
           </Notice>
         )}
-        <NotKeptNotices />
+        <SavingNotices />
         <ul className="deck-list">
           {decks.map((deck) => (
             <li key={deck.id} className="deck-list-deck">
@@ -132,11 +133,18 @@ export default function DeckListScreen(): ReactElement | null {
   );
 }
 
-/** One notice for each line for a change not kept, oldest first; rendering it counts as showing them. */
-function NotKeptNotices(): ReactElement {
+/**
+ * The line while changes are not yet kept, then one notice for each line for a
+ * change not kept, oldest first; rendering it counts as showing the latter.
+ */
+function SavingNotices(): ReactElement {
+  const waiting = useChangesWaiting();
   const lines = useNotKeptLines();
   return (
     <>
+      {waiting && (
+        <Notice>Your changes are not saved yet. Keep this page open.</Notice>
+      )}
       {lines.map((line, index) => (
         <Notice key={index}>{line}</Notice>
       ))}

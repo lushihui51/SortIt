@@ -8,7 +8,8 @@ import AppRoutes from "./AppRoutes";
 import { deckAddress } from "./deckAddress";
 
 // No test reaches Convex or Clerk: each test sets whether the learner is
-// signed in, to both alike, and the decks the list query gives.
+// signed in, to both alike, and the decks the list query gives. Convex's
+// client reports no mutation in flight.
 const learner = vi.hoisted(() => ({
   signedIn: false,
   decks: [] as Deck[],
@@ -32,6 +33,7 @@ vi.mock("convex/react", async () => {
         ? learner.decks
         : undefined,
     useMutation: () => mutation(),
+    useConvexConnectionState: () => ({ inflightMutations: 0 }),
   };
 });
 

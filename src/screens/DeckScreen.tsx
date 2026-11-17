@@ -7,6 +7,7 @@ import Account from "../account/Account";
 import Board from "../board/Board";
 import { useDeckBoard } from "../board/BoardsProvider";
 import { useNotKeptLines } from "../decks/NotKeptProvider";
+import { useChangesWaiting } from "../decks/useChangesWaiting";
 import { useDeckActs } from "../decks/useDeckActs";
 import { deckAddress, deckIdOf } from "../routes/deckAddress";
 import Notice from "../ui/Notice";
@@ -16,10 +17,11 @@ import { useDeckNotOpened } from "./DeckNotOpened";
 /**
  * The screen of a learner's deck, the one screen that reads a deck from
  * Convex: the board of the deck the address's code names, with the acts that
- * change the deck and the lines for changes not kept. A deck the learner
- * cannot open brings the list of decks with the line saying so. It must be
- * rendered at the route `/decks/:segment` inside `BoardsProvider` and
- * `DeckNotOpenedProvider`, for a signed-in learner.
+ * change the deck, the line while changes are not yet kept and the lines for
+ * changes not kept. A deck the learner cannot open brings the list of decks
+ * with the line saying so. It must be rendered at the route `/decks/:segment`
+ * inside `BoardsProvider` and `DeckNotOpenedProvider`, for a signed-in
+ * learner.
  */
 export default function DeckScreen(): ReactElement | null {
   const { segment = "" } = useParams();
@@ -62,17 +64,24 @@ function DeckBoard({ deck }: { deck: Deck }): ReactElement | null {
       dispatch={dispatch}
       account={<Account />}
       back={<BackToList />}
-      notices={<NotKeptNotices />}
+      notices={<SavingNotices />}
       acts={forDeck(deck)}
     />
   );
 }
 
-/** One notice for each line for a change not kept, oldest first; rendering it counts as showing them. */
-function NotKeptNotices(): ReactElement {
+/**
+ * The line while changes are not yet kept, then one notice for each line for a
+ * change not kept, oldest first; rendering it counts as showing the latter.
+ */
+function SavingNotices(): ReactElement {
+  const waiting = useChangesWaiting();
   const lines = useNotKeptLines();
   return (
     <>
+      {waiting && (
+        <Notice>Your changes are not saved yet. Keep this page open.</Notice>
+      )}
       {lines.map((line, index) => (
         <Notice key={index}>{line}</Notice>
       ))}
