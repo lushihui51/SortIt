@@ -1,5 +1,11 @@
 import "@testing-library/jest-dom/vitest";
-import { cleanup, render, screen, within } from "@testing-library/react";
+import {
+  act,
+  cleanup,
+  render,
+  screen,
+  within,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import {
   Link,
@@ -11,15 +17,21 @@ import {
 } from "react-router";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import type { Deck } from "../../convex/model/deck";
+import { BoardsProvider } from "../board/BoardsProvider";
+import AppRoutes from "../routes/AppRoutes";
 import { deckAddress } from "../routes/deckAddress";
 import DeckListScreen from "./DeckListScreen";
 import { DeckNotOpenedProvider, useDeckNotOpened } from "./DeckNotOpened";
 
-// No test reaches Convex: each sets the decks the list query gives, and reads
-// what was sent, each mutation's function name with its arguments.
+// No test reaches Convex: each sets the decks the list query gives and what
+// the deck's own query gives for an id, and reads what was sent, each
+// mutation's function name with its arguments. Each mutation resolves with
+// what `reply` gives for its function's name.
 const convex = vi.hoisted(() => ({
   decks: undefined as Deck[] | undefined,
+  deck: (() => null) as (id: string) => Deck | null,
   sent: [] as { name: string; args: unknown }[],
+  reply: (() => Promise.resolve(null)) as (name: string) => Promise<unknown>,
 }));
 
 vi.mock("convex/react", async () => {
@@ -28,7 +40,7 @@ vi.mock("convex/react", async () => {
     Object.assign(
       (args: unknown) => {
         convex.sent.push({ name, args });
-        return Promise.resolve(null);
+        return convex.reply(name);
       },
       {
         withOptimisticUpdate() {
@@ -38,8 +50,14 @@ vi.mock("convex/react", async () => {
     );
   return {
     useConvexAuth: () => ({ isLoading: false, isAuthenticated: true }),
-    useQuery: (query: never) =>
-      getFunctionName(query) === "decks:list" ? convex.decks : undefined,
+    useQuery: (query: never, args?: unknown) => {
+      if (args === "skip") return undefined;
+      const name = getFunctionName(query);
+      if (name === "decks:list") return convex.decks;
+      if (name === "decks:get")
+        return convex.deck((args as { id: string }).id);
+      return undefined;
+    },
     useMutation: (fn: never) => mutation(getFunctionName(fn)),
   };
 });
@@ -78,7 +96,9 @@ const decks = [
 
 beforeEach(() => {
   convex.decks = decks;
+  convex.deck = (id) => decks.find((deck) => deck.id === id) ?? null;
   convex.sent = [];
+  convex.reply = () => Promise.resolve(null);
 });
 
 afterEach(cleanup);
@@ -160,11 +180,21 @@ test("shows the line that a deck cannot be opened only while it is shown", async
   expect(screen.queryByRole("status")).toBeNull();
   await user.click(screen.getByRole("button", { name: "Show the line" }));
   const status = screen.getByRole("status");
-  expect(status.tagName).toBe("P");
   expect(status).toHaveTextContent(
     new RegExp(`^${line.replace(/\./g, "\\.")}$`),
   );
   expect(status.nextElementSibling).toBe(screen.getByRole("list"));
+});
+
+test("the line for a deck that cannot be opened is a notice", async () => {
+  const user = userEvent.setup();
+  render(app());
+  await user.click(screen.getByRole("button", { name: "Show the line" }));
+  const status = screen.getByRole("status");
+  expect(status).toHaveTextContent(line);
+  const icons = status.querySelectorAll("svg");
+  expect(icons).toHaveLength(1);
+  expect(icons[0]).toHaveAttribute("aria-hidden", "true");
 });
 
 test("the line is gone when the learner comes back to the list after opening a deck", async () => {
@@ -380,4 +410,57 @@ test("the panel and the question of a deck show only while the list holds it", a
   );
   expect(screen.queryByRole("alertdialog")).toBeNull();
   expect(screen.queryByRole("dialog")).toBeNull();
+});
+
+test("a line for a change not kept shows at the top of the list, after the line for a deck that cannot be opened", async () => {
+  const [history, animals] = decks;
+  // Animals cannot be opened, and the card made on History's board waits for
+  // its mutation.
+  convex.deck = (id) => (id === history.id ? history : null);
+  let resolve: (value: unknown) => void = () => {};
+  convex.reply = (name) =>
+    name === "decks:addCard"
+      ? new Promise((settle) => {
+          resolve = settle;
+        })
+      : Promise.resolve(null);
+  const user = userEvent.setup();
+  render(
+    <MemoryRouter initialEntries={[deckAddress(history)]}>
+      <BoardsProvider>
+        <main>
+          <AppRoutes />
+        </main>
+      </BoardsProvider>
+    </MemoryRouter>,
+  );
+  await user.type(
+    screen.getByRole("textbox", { name: "New card" }),
+    "Seal{Enter}",
+  );
+  expect(screen.queryByRole("alert")).toBeNull();
+  await user.click(
+    screen.getByRole("link", { name: "Back to the list of decks" }),
+  );
+  await user.click(screen.getByRole("link", { name: animals.name }));
+  expect(
+    within(screen.getByRole("main"))
+      .getAllByRole("status")
+      .map((status) => status.textContent),
+  ).toEqual([line]);
+
+  await act(async () =>
+    resolve({ refused: "nameTaken", kind: "card", name: "Seal" }),
+  );
+  const statuses = within(screen.getByRole("main")).getAllByRole("status");
+  expect(statuses.map((status) => status.textContent)).toEqual([
+    line,
+    'Your new card "Seal" was not kept. The deck "History" already has a card called "Seal".',
+  ]);
+  expect(statuses[1].querySelector("svg")).toHaveAttribute(
+    "aria-hidden",
+    "true",
+  );
+  expect(statuses[0].nextElementSibling).toBe(statuses[1]);
+  expect(statuses[1].nextElementSibling).toBe(screen.getByRole("list"));
 });

@@ -306,6 +306,32 @@ test("shows what it is given as back at the start of the bar", () => {
   );
 });
 
+test("shows what it is given as notices between the bar and the pool", () => {
+  render(
+    <Board
+      deck={appDeck}
+      board={boardAfter(appDeck)}
+      dispatch={vi.fn()}
+      random={zero}
+      notices={
+        <>
+          <p>First probe</p>
+          <p>Second probe</p>
+        </>
+      }
+    />,
+  );
+  const first = screen.getByText("First probe");
+  const second = screen.getByText("Second probe");
+  expect(first.previousElementSibling).toContainElement(
+    screen.getByRole("button", { name: "Reset" }),
+  );
+  expect(first.nextElementSibling).toBe(second);
+  expect(second.nextElementSibling).toBe(
+    screen.getByRole("region", { name: "Unsorted" }),
+  );
+});
+
 test("pressing a dimension dispatches chooseDimension with its id", async () => {
   const { user, dispatch } = setUp(numbered, boardAfter(numbered));
   await user.click(screen.getByRole("button", { name: "Diet" }));

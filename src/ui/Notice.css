@@ -1,0 +1,21 @@
+.notice {
+  display: flex;
+  align-items: center;
+  gap: var(--notice-gap);
+  padding: var(--region-padding) var(--board-padding);
+  background: var(--color-notice);
+  border: var(--border-width) solid var(--color-notice-border);
+  border-radius: var(--card-radius);
+  color: var(--color-text);
+}
+
+.notice-icon {
+  flex: none;
+  width: var(--icon-size);
+  height: var(--icon-size);
+  color: var(--color-notice-icon);
+}
+
+.notice-text {
+  margin: 0;
+}

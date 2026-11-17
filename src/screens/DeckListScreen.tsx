@@ -3,10 +3,12 @@ import { useRef, useState, type ReactElement } from "react";
 import { Link, useNavigate } from "react-router";
 import { api } from "../../convex/_generated/api";
 import Account from "../account/Account";
+import { useNotKeptLines } from "../decks/NotKeptProvider";
 import { useDeckActs } from "../decks/useDeckActs";
 import { deckAddress } from "../routes/deckAddress";
 import InfoButton from "../ui/InfoButton";
 import NewField from "../ui/NewField";
+import Notice from "../ui/Notice";
 import Panel from "../ui/Panel";
 import Question from "../ui/Question";
 import { deleteDeckQuestion } from "../words/deleteQuestion";
@@ -16,9 +18,10 @@ import "./DeckListScreen.css";
 
 /**
  * The list of the learner's decks, under the line that a deck cannot be
- * opened while `useDeckNotOpened` shows it, and ended by the "New deck" field,
- * which opens the board of the deck it makes. Each deck's ⓘ opens its panel,
- * whose Delete deletes the deck once the learner agrees to a question.
+ * opened while `useDeckNotOpened` shows it and then the lines for changes not
+ * kept, and ended by the "New deck" field, which opens the board of the deck
+ * it makes. Each deck's ⓘ opens its panel, whose Delete deletes the deck once
+ * the learner agrees to a question.
  */
 export default function DeckListScreen(): ReactElement | null {
   const decks = useQuery(api.decks.list);
@@ -68,11 +71,12 @@ export default function DeckListScreen(): ReactElement | null {
       </div>
       <div className="deck-list-column">
         {shown && (
-          <p role="status" className="deck-list-line">
+          <Notice>
             This deck cannot be opened. It may have been deleted, or belong to
             another account.
-          </p>
+          </Notice>
         )}
+        <NotKeptNotices />
         <ul className="deck-list">
           {decks.map((deck) => (
             <li key={deck.id} className="deck-list-deck">
@@ -125,5 +129,17 @@ export default function DeckListScreen(): ReactElement | null {
         />
       )}
     </div>
+  );
+}
+
+/** One notice for each line for a change not kept, oldest first; rendering it counts as showing them. */
+function NotKeptNotices(): ReactElement {
+  const lines = useNotKeptLines();
+  return (
+    <>
+      {lines.map((line, index) => (
+        <Notice key={index}>{line}</Notice>
+      ))}
+    </>
   );
 }

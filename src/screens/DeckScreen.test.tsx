@@ -1,5 +1,5 @@
 import "@testing-library/jest-dom/vitest";
-import { cleanup, render, screen, within } from "@testing-library/react";
+import { act, cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, useLocation, useNavigationType } from "react-router";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
@@ -11,12 +11,14 @@ import { deckAddress } from "../routes/deckAddress";
 // No test reaches Convex or Clerk: each test sets whether the learner is
 // signed in, to both alike, the decks the list query gives, and what the
 // deck's own query gives for an id: a deck, null, or undefined while loading.
-// Each mutation sent is kept in `sent` by its function's name.
+// Each mutation sent is kept in `sent` by its function's name, and resolves
+// with what `reply` gives for that name.
 const learner = vi.hoisted(() => ({
   signedIn: true,
   decks: [] as Deck[] | undefined,
   deck: (() => undefined) as (id: string) => Deck | null | undefined,
   sent: [] as { name: string; args: unknown }[],
+  reply: (() => Promise.resolve(null)) as (name: string) => Promise<unknown>,
 }));
 
 vi.mock("convex/react", async () => {
@@ -25,7 +27,7 @@ vi.mock("convex/react", async () => {
     Object.assign(
       (args: unknown) => {
         learner.sent.push({ name, args });
-        return Promise.resolve(null);
+        return learner.reply(name);
       },
       {
         withOptimisticUpdate() {
@@ -102,6 +104,7 @@ beforeEach(() => {
   learner.decks = [animals];
   learner.deck = served(animals);
   learner.sent = [];
+  learner.reply = () => Promise.resolve(null);
   clerk.openSignIn.mockReset();
 });
 
@@ -297,4 +300,79 @@ test("the board of a learner's deck is given the acts of the hook for that deck"
   renderAt("/");
   expect(screen.getByText("Shark")).toBeInTheDocument();
   expect(screen.queryByRole("textbox")).toBeNull();
+});
+
+/**
+ * Makes the mutation of `name` wait; the function returned resolves it with
+ * `value` and lets the screens take what it gives.
+ */
+function waitingReply(name: string): (value: unknown) => Promise<void> {
+  let resolve: (value: unknown) => void = () => {};
+  learner.reply = (sent) =>
+    sent === name
+      ? new Promise((settle) => {
+          resolve = settle;
+        })
+      : Promise.resolve(null);
+  return (value) => act(async () => resolve(value));
+}
+
+/**
+ * The notices of the screen, in order: each element of role status in the
+ * page that holds an icon, which dnd-kit's own status of a drag never does.
+ */
+function notices(): HTMLElement[] {
+  return within(screen.getByRole("main"))
+    .queryAllByRole("status")
+    .filter((status) => status.querySelector("svg") !== null);
+}
+
+const notKept =
+  'Your new card "Seal" was not kept. The deck "Animals" already has a card called "Seal".';
+
+const sealTaken = { refused: "nameTaken", kind: "card", name: "Seal" };
+
+test("a line for a change not kept shows at the top of the deck's board", async () => {
+  const reply = waitingReply("decks:addCard");
+  const { user } = renderAt(deckAddress(animals));
+  await user.type(
+    screen.getByRole("textbox", { name: "New card" }),
+    "Seal{Enter}",
+  );
+  expect(notices()).toEqual([]);
+
+  await reply(sealTaken);
+  const [status, ...more] = notices();
+  expect(more).toEqual([]);
+  expect(status).toHaveTextContent(
+    /^Your new card "Seal" was not kept\. The deck "Animals" already has a card called "Seal"\.$/,
+  );
+  expect(status.previousElementSibling).toContainElement(
+    screen.getByRole("button", { name: "Reset" }),
+  );
+  expect(status.nextElementSibling).toBe(
+    screen.getByRole("region", { name: "Unsorted" }),
+  );
+});
+
+test("the line is gone after the learner goes to the list and opens the deck again", async () => {
+  const reply = waitingReply("decks:addCard");
+  const { user } = renderAt(deckAddress(animals));
+  await user.type(
+    screen.getByRole("textbox", { name: "New card" }),
+    "Seal{Enter}",
+  );
+  await reply(sealTaken);
+  expect(notices().map((each) => each.textContent)).toEqual([notKept]);
+
+  await user.click(
+    screen.getByRole("link", { name: "Back to the list of decks" }),
+  );
+  expect(path()).toBe("/decks");
+  expect(screen.queryByText(notKept)).toBeNull();
+  await user.click(screen.getByRole("link", { name: "Animals" }));
+  expect(path()).toBe(deckAddress(animals));
+  expect(screen.getByText("Orca")).toBeInTheDocument();
+  expect(screen.queryByText(notKept)).toBeNull();
+  expect(notices()).toEqual([]);
 });

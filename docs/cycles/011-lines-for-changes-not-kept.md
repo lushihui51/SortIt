@@ -226,7 +226,7 @@ export function useNotKept(): {
 
 **Status**
 
-- [ ]
+- [x]
 
 **Goal**
 
@@ -301,7 +301,16 @@ notices?: ReactNode;
 
 **Debrief**
 
-None.
+- `npx vitest run src/ui/Notice.test.tsx src/board/Board.test.tsx src/screens/DeckScreen.test.tsx src/screens/DeckListScreen.test.tsx --reporter=verbose` printed ✓ for `Notice shows its line with role status and an icon hidden from assistive technology`.
+- The same run printed ✓ for `shows what it is given as notices between the bar and the pool`.
+- The same run printed ✓ for `a line for a change not kept shows at the top of the deck's board` and `the line is gone after the learner goes to the list and opens the deck again`.
+- The same run printed ✓ for `a line for a change not kept shows at the top of the list, after the line for a deck that cannot be opened` and `the line for a deck that cannot be opened is a notice`, and "Tests 71 passed (71)".
+- `npm test` printed "Test Files 27 passed (27)" and "Tests 279 passed (279)"; `npm run typecheck` exited with status 0; `npm run build` exited with status 0.
+- `grep -cxF` of the row the Details gives, read from this file, printed 1 for docs/vocabulary.md and 1 for its last line.
+- Departures from guidance: none.
+- Read the row "Line after a deck's address names a deck the learner cannot open" in docs/vocabulary.md: its Code cell now also names `Notice` in src/ui/Notice.tsx, which draws that line. No other existing row changed.
+- Read `notices` in src/screens/DeckScreen.test.tsx: dnd-kit's live region on the board also has the role status inside `main`, so the board's tests take as notices only the elements of role status that hold an icon.
+- src/board/Board.css is unchanged: `notices` stand as children of the board's column, so the board's gap already stands between them. Each of the three screens holds its own `NotKeptNotices`, as the guidance gives.
 
 ### T4 — Line while changes are not yet kept
 

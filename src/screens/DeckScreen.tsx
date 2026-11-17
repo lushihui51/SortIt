@@ -6,15 +6,17 @@ import type { Deck } from "../../convex/model/deck";
 import Account from "../account/Account";
 import Board from "../board/Board";
 import { useDeckBoard } from "../board/BoardsProvider";
+import { useNotKeptLines } from "../decks/NotKeptProvider";
 import { useDeckActs } from "../decks/useDeckActs";
 import { deckAddress, deckIdOf } from "../routes/deckAddress";
+import Notice from "../ui/Notice";
 import BackToList from "./BackToList";
 import { useDeckNotOpened } from "./DeckNotOpened";
 
 /**
  * The screen of a learner's deck, the one screen that reads a deck from
  * Convex: the board of the deck the address's code names, with the acts that
- * change the deck. A deck the learner
+ * change the deck and the lines for changes not kept. A deck the learner
  * cannot open brings the list of decks with the line saying so. It must be
  * rendered at the route `/decks/:segment` inside `BoardsProvider` and
  * `DeckNotOpenedProvider`, for a signed-in learner.
@@ -60,7 +62,20 @@ function DeckBoard({ deck }: { deck: Deck }): ReactElement | null {
       dispatch={dispatch}
       account={<Account />}
       back={<BackToList />}
+      notices={<NotKeptNotices />}
       acts={forDeck(deck)}
     />
+  );
+}
+
+/** One notice for each line for a change not kept, oldest first; rendering it counts as showing them. */
+function NotKeptNotices(): ReactElement {
+  const lines = useNotKeptLines();
+  return (
+    <>
+      {lines.map((line, index) => (
+        <Notice key={index}>{line}</Notice>
+      ))}
+    </>
   );
 }

@@ -80,6 +80,8 @@ export type BoardProps = {
   account?: ReactNode;
   /** Shown at the start of the bar, before "Sort by". */
   back?: ReactNode;
+  /** Shown between the bar and the pool. */
+  notices?: ReactNode;
   /** The acts that change the deck; given only for a learner's own deck. */
   acts?: BoardActs;
 };
@@ -108,6 +110,7 @@ export default function Board({
   random = Math.random,
   account,
   back,
+  notices,
   acts,
 }: BoardProps): ReactElement {
   const cardsById = useMemo(
@@ -334,6 +337,7 @@ export default function Board({
           )}
           {account}
         </div>
+        {notices}
         <Pool
           cards={cardsIn({ kind: "pool" })}
           marks={marks}

@@ -25,6 +25,9 @@
   --color-shadow-panel: rgb(0 0 0 / 0.25);
   /* The colour of an act that deletes. */
   --color-danger: #a3281a;
+  --color-notice: #fff3cd;
+  --color-notice-border: #b38a00;
+  --color-notice-icon: #8a6d00;
 
   /* Sizes */
   --font-size: 1rem;
@@ -74,6 +77,8 @@
   --font-size-heading: 1.125rem;
   --icon-button-size: 36px;
   --icon-size: 18px;
+  /* Space between a notice's icon and its line. */
+  --notice-gap: 10px;
   /* Smallest width and height of a button on a phone. */
   --hit-size: 44px;
   --account-button-size: 34px;

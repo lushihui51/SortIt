@@ -17,18 +17,13 @@
   min-height: var(--account-button-size);
 }
 
-/* The line, the list and "New deck", one column of the list's width. */
+/* The notices, the list and "New deck", one column of the list's width. */
 .deck-list-column {
   display: flex;
   flex-direction: column;
   gap: var(--gap);
   width: 100%;
   max-width: var(--deck-list-width);
-}
-
-.deck-list-line {
-  margin: 0;
-  color: var(--color-label);
 }
 
 .deck-list {
