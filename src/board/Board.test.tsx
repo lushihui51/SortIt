@@ -1122,3 +1122,199 @@ test("a panel closes when the deck no longer holds its thing", async () => {
     cleanup();
   }
 });
+
+/**
+ * The board of `partial` with Habitat chosen, its cards in a fixed order, each
+ * in the zone of the category `places` gives it or else in the pool.
+ */
+function habitatOf(
+  places: Record<string, string> = {},
+  checking = false,
+): BoardState {
+  const order = ["shark", "deer", "platypus", "owl"];
+  return {
+    dimension: "habitat",
+    order,
+    places: Object.fromEntries(
+      order.map((card) => [
+        card,
+        Object.hasOwn(places, card)
+          ? { kind: "zone", category: places[card] }
+          : { kind: "pool" },
+      ]),
+    ),
+    checking,
+  };
+}
+
+/** The "Save answers" button of the bar. */
+function saveButton(): HTMLElement {
+  return within(
+    screen.getByRole("group", { name: "Sort by" }).parentElement!,
+  ).getByRole("button", { name: "Save answers" });
+}
+
+/** Presses "Save answers" in the open question. */
+async function confirmSave(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(
+    within(screen.getByRole("alertdialog")).getByRole("button", {
+      name: "Save answers",
+    }),
+  );
+}
+
+test("given no acts, the board shows no Save answers", () => {
+  for (const [deck, board] of [
+    [empty, boardAfter(empty)],
+    [numbered, boardAfter(numbered)],
+    [partial, habitatOf({ shark: "forest", deer: "forest" })],
+    [appDeck, boardAfter(appDeck, ...mixed, toggleCheck)],
+  ] as const) {
+    setUp(deck, board);
+    expect(screen.queryByRole("button", { name: "Save answers" })).toBeNull();
+    expect(screen.queryByText("Save answers")).toBeNull();
+    cleanup();
+  }
+});
+
+test("Save answers calls saveAnswers at once when it changes no existing answer", async () => {
+  // Shark and Deer lie in their answers' zones, Platypus has no answer, and
+  // Owl lies in the pool.
+  for (const checking of [false, true]) {
+    const acts = actsOf(partial);
+    const dispatch = vi.fn<BoardProps["dispatch"]>();
+    const user = userEvent.setup();
+    render(
+      <Board
+        deck={partial}
+        board={habitatOf(
+          { shark: "ocean", deer: "forest", platypus: "ocean" },
+          checking,
+        )}
+        dispatch={dispatch}
+        random={zero}
+        acts={acts}
+        account={<button type="button">Probe</button>}
+      />,
+    );
+    const save = saveButton();
+    expect(save).toHaveAttribute("type", "button");
+    expect(save).toBeEnabled();
+    expect(save).toHaveClass("board-action", "board-save");
+    expect(save.previousElementSibling).toHaveAttribute("aria-live", "polite");
+    expect(save.nextElementSibling).toBe(
+      screen.getByRole("button", { name: "Probe" }),
+    );
+    await user.click(save);
+    expect(acts.saveAnswers).toHaveBeenCalledExactlyOnceWith("habitat", [
+      { card: "shark", category: "ocean" },
+      { card: "deer", category: "forest" },
+      { card: "platypus", category: "ocean" },
+    ]);
+    expect(called(acts)).toEqual(["saveAnswers"]);
+    expect(screen.queryByRole("alertdialog")).toBeNull();
+    expect(dispatch).not.toHaveBeenCalled();
+    cleanup();
+  }
+});
+
+test("Save answers asks how many cards' answers change, and calls saveAnswers only once the learner confirms", async () => {
+  for (const [places, words] of [
+    [
+      { shark: "forest", deer: "ocean", platypus: "ocean", owl: "forest" },
+      'Change the answers of 2 cards for the dimension "Habitat"?',
+    ],
+    [
+      { shark: "forest", platypus: "ocean", owl: "forest" },
+      'Change the answers of 1 card for the dimension "Habitat"?',
+    ],
+  ] as const) {
+    const acts = actsOf(partial);
+    const { user, dispatch, renderAgain } = setUp(
+      partial,
+      habitatOf(places),
+      acts,
+    );
+    const save = saveButton();
+    await user.click(save);
+    const question = screen.getByRole("alertdialog", { name: words });
+    expect(
+      within(question).getByRole("button", { name: "Save answers" }),
+    ).toBeInTheDocument();
+    expect(called(acts)).toEqual([]);
+    // Owl goes back to the pool while the question shows; confirming reads
+    // the board as it is then.
+    const { owl: _, ...withoutOwl } = places;
+    renderAgain(partial, habitatOf(withoutOwl));
+    await confirmSave(user);
+    expect(acts.saveAnswers).toHaveBeenCalledExactlyOnceWith(
+      "habitat",
+      Object.entries(withoutOwl).map(([card, category]) => ({
+        card,
+        category,
+      })),
+    );
+    expect(called(acts)).toEqual(["saveAnswers"]);
+    expect(screen.queryByRole("alertdialog")).toBeNull();
+    expect(save).toHaveFocus();
+    expect(dispatch).not.toHaveBeenCalled();
+    cleanup();
+  }
+});
+
+test("Cancel in the question calls nothing", async () => {
+  const acts = actsOf(partial);
+  const { user, dispatch } = setUp(
+    partial,
+    habitatOf({ shark: "forest", deer: "ocean" }),
+    acts,
+  );
+  const save = saveButton();
+  await user.click(save);
+  await user.click(
+    within(
+      screen.getByRole("alertdialog", {
+        name: 'Change the answers of 2 cards for the dimension "Habitat"?',
+      }),
+    ).getByRole("button", { name: "Cancel" }),
+  );
+  expect(screen.queryByRole("alertdialog")).toBeNull();
+  expect(save).toHaveFocus();
+  expect(called(acts)).toEqual([]);
+  expect(dispatch).not.toHaveBeenCalled();
+});
+
+test("Save answers calls nothing while no dimension is chosen or no card lies in a zone", async () => {
+  for (const [deck, board] of [
+    [numbered, boardAfter(numbered)],
+    [numbered, boardAfter(numbered, choose("dimension-1"), toggleCheck)],
+    [partial, habitatOf()],
+  ] as const) {
+    const acts = actsOf(deck);
+    const { user, dispatch } = setUp(deck, board, acts);
+    expect(saveButton()).toBeEnabled();
+    await user.click(saveButton());
+    expect(screen.queryByRole("alertdialog")).toBeNull();
+    expect(called(acts)).toEqual([]);
+    expect(dispatch).not.toHaveBeenCalled();
+    cleanup();
+  }
+  // The question shows, and by the time the learner confirms no dimension is
+  // chosen or every card has gone back to the pool.
+  for (const after of [habitatOf(), boardAfter(partial)]) {
+    const acts = actsOf(partial);
+    const { user, dispatch, renderAgain } = setUp(
+      partial,
+      habitatOf({ shark: "forest" }),
+      acts,
+    );
+    await user.click(saveButton());
+    expect(screen.getByRole("alertdialog")).toBeInTheDocument();
+    renderAgain(partial, after);
+    await confirmSave(user);
+    expect(screen.queryByRole("alertdialog")).toBeNull();
+    expect(called(acts)).toEqual([]);
+    expect(dispatch).not.toHaveBeenCalled();
+    cleanup();
+  }
+});

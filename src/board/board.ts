@@ -270,6 +270,31 @@ export function score(
   };
 }
 
+/** The answer each card in a zone would get: its card id and its zone's category id, in the board's order. */
+export function answersOnBoard(
+  board: BoardState,
+): { card: string; category: string }[] {
+  return board.order.flatMap((card) => {
+    const place = board.places[card];
+    return place.kind === "zone" ? [{ card, category: place.category }] : [];
+  });
+}
+
+/** How many cards in a zone have an answer under the chosen dimension that is not their zone's category. */
+export function answersChanged(board: BoardState, deck: Deck): number {
+  const dimension = board.dimension;
+  if (dimension === null) return 0;
+  const cardsById = new Map(deck.cards.map((card) => [card.id, card]));
+  return answersOnBoard(board).filter(({ card, category }) => {
+    const answers = cardsById.get(card)?.answers;
+    return (
+      answers !== undefined &&
+      Object.hasOwn(answers, dimension) &&
+      answers[dimension] !== category
+    );
+  }).length;
+}
+
 /**
  * Returns a new array holding the elements of `list` in an order drawn from
  * `random`, which it calls `list.length - 1` times. `list` is left unchanged.

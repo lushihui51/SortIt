@@ -406,7 +406,7 @@ On the board of a deck of their own, each dimension and each zone holds an ⓘ, 
 
 **Status**
 
-- [ ]
+- [x]
 
 **Goal**
 
@@ -481,4 +481,14 @@ export function answersChanged(board: BoardState, deck: Deck): number;
 
 **Debrief**
 
-None.
+- `npx vitest run src/board/board.test.ts --reporter=verbose` shows ✓ for `answersOnBoard pairs each card in a zone with its zone's category, in the board's order, and leaves out the pool` and `answersChanged counts the cards in a zone whose answer is another category, and no card without an answer or in the pool`. The second runs Diet over Frog's deck, with Shark and Wolf, both carnivores, in Herbivore, Deer, a herbivore, in Herbivore, Frog, with no Diet answer, in Herbivore, and Whale, a carnivore, in the pool. The count is 2. It also counts 3 on a Habitat board where only Shark lies in its answer's zone, and 0 with no dimension chosen, with every card in the pool, and with every card in a zone in its answer's zone. I also added both functions to the existing test `no function changes the state, the action, the board or the deck it is given`, whose name is unchanged.
+- `npx vitest run src/board/Board.test.tsx --reporter=verbose` shows ✓ for all five tests of src/board/Board.test.tsx named in Done when. They build the boards of `partial` by hand, with Habitat chosen and a fixed order of cards. The test of saving at once runs with Check off and on. It puts Platypus, which has no answer, in a zone, so a card with no answer changes nothing and asks nothing. It also checks that the button is a `type="button"`, is enabled, follows the score and comes before what `account` shows. The test of the question runs 2 cards and 1 card. While the question shows, it renders the board again with Owl moved back to the pool, then confirms, and asserts that the pairs sent leave Owl out, so they are read at confirmation. The test that nothing is called runs no dimension chosen and every card in the pool, both from a press and from a question open when the board changes to either. Every test asserts that nothing was dispatched, so the board stays as it is.
+- Breaking the code made the matching test fail, and each passed again once the code was restored: confirming with no card in a zone, asking even when no answer changes, a question that stays open after confirming, counting a card with no answer, and putting cards in the pool in the pairs.
+- `npm test`: 24 test files passed, 247 tests passed. `npm run typecheck` exits with status 0.
+- A Python check that reads the two rows from the Details of this task finds each as a whole line of docs/vocabulary.md, and prints `2 True`.
+- `npm run build` exits with status 0. It prints the chunk-size warning it printed before this task.
+- I checked the look against drawing 1 in a scratch Vite page outside the repository. It rendered `Board` over the app's own deck with fake acts, in headless Chromium. At 1440×900, "Save answers" stands after "2 of 3 correct" and before the account. It has the fill rgb(31, 35, 40), white text, a border of the fill's colour, 6px 12px padding, a radius of 6px and a height of 34px, the same as Reset. At the narrowest width headless Chromium allows, 500px, it is 44px high, as Reset is. Focused by the keyboard at both widths, it shows the 3px solid rgb(47, 111, 209) outline at a 5px offset that the other controls show. Pressed with one answer changing, it shows `Change the answers of 1 card for the dimension "Habitat"?` with "Save answers" and "Cancel".
+- The cycle's Judgement needs a signed-in browser, `npx convex dev` and the engineer's accounts, so those checks are the engineer's. My evidence for the Judgement is the tests this cycle names, all passing under `npm test` above. The live app with sign-in was not run.
+- No departure from guidance. When the question closes, the focus returns to the bar's "Save answers", as `Question` returns it. The tests of the question and of Cancel assert this.
+- Choices the Details leave to the builder: "Save answers" takes the existing class `board-action`, for its box, its 44px on a phone and its focus outline, and adds `board-save` in src/board/Board.css for the pressed colours. The task adds no custom property. The question's words are fixed when the learner presses, so its count is the count at the press. The dimension and the pairs are still read when the learner confirms.
+- Read `pressSave` and `save` in src/board/Board.tsx. The first saves at once or opens the question. The second reads the board when it runs and sends nothing when no dimension is chosen or no card lies in a zone.

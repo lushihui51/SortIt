@@ -1,5 +1,7 @@
 import { expect, test } from "vitest";
 import {
+  answersChanged,
+  answersOnBoard,
   type BoardAction,
   type BoardState,
   type BoardsState,
@@ -621,6 +623,41 @@ test("score is null while Check is off and while no card lies in a zone", () => 
   expect(score(boardOf(toggle(off)), deck)).toEqual({ correct: 1, judged: 4 });
 });
 
+test("answersOnBoard pairs each card in a zone with its zone's category, in the board's order, and leaves out the pool", () => {
+  // Order Whale, Wolf, Shark, Deer; Wolf and Deer stay in the pool.
+  let state = place(habitat(), id.shark, id.ocean);
+  state = place(state, id.whale, id.forest);
+  expect(answersOnBoard(boardOf(state))).toEqual([
+    { card: id.whale, category: id.forest },
+    { card: id.shark, category: id.ocean },
+  ]);
+  expect(answersOnBoard(boardOf(placedOneRight()))).toEqual([
+    { card: id.whale, category: id.forest },
+    { card: id.wolf, category: id.ocean },
+    { card: id.shark, category: id.ocean },
+    { card: id.deer, category: id.ocean },
+  ]);
+  expect(answersOnBoard(boardOf(habitat()))).toEqual([]);
+  expect(answersOnBoard(boardOf(loaded()))).toEqual([]);
+});
+
+test("answersChanged counts the cards in a zone whose answer is another category, and no card without an answer or in the pool", () => {
+  // Under Diet: Shark and Wolf are carnivores in Herbivore, Deer is a
+  // herbivore in Herbivore, Frog has no answer, and Whale, a carnivore, stays
+  // in the pool.
+  let state = frogDiet();
+  for (const card of [id.shark, id.wolf, id.deer, id.frog])
+    state = place(state, card, id.herbivore, frogDeck);
+  expect(answersChanged(boardOf(state), frogDeck)).toBe(2);
+  expect(answersChanged(boardOf(toggle(state)), frogDeck)).toBe(2);
+  // Only Shark lies in its answer's zone; the other three change.
+  expect(answersChanged(boardOf(placedOneRight()), deck)).toBe(3);
+  expect(answersChanged(boardOf(frogDiet()), frogDeck)).toBe(0);
+  expect(answersChanged(boardOf(loaded()), deck)).toBe(0);
+  const right = place(place(habitat(), id.shark, id.ocean), id.deer, id.forest);
+  expect(answersChanged(boardOf(right), deck)).toBe(0);
+});
+
 function deepFreeze<T>(value: T): T {
   if (typeof value === "object" && value !== null && !Object.isFrozen(value)) {
     Object.freeze(value);
@@ -666,6 +703,8 @@ test("no function changes the state, the action, the board or the deck it is giv
       const board = boardOf(state);
       const fitted = fitBoard(board, of);
       score(fitted, of);
+      answersOnBoard(fitted);
+      answersChanged(fitted, of);
       for (const card of of.cards) markOf(fitted, of, card.id);
     }
   }

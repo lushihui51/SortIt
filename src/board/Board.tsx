@@ -16,6 +16,8 @@ import {
 import type { Card, Deck } from "../../convex/model/deck";
 import type { ActResult, SaveAnswersResult } from "../../convex/model/deckActs";
 import {
+  answersChanged,
+  answersOnBoard,
   markOf,
   score,
   type BoardState,
@@ -36,6 +38,7 @@ import {
   deleteDimensionQuestion,
 } from "../words/deleteQuestion";
 import { refusalWords } from "../words/refusalWords";
+import { saveAnswersQuestion } from "../words/saveAnswersQuestion";
 import "./Board.css";
 
 // dnd-kit announces drags and describes draggables in words of its own; the
@@ -93,8 +96,10 @@ type Opened = { kind: "card" | "dimension" | "category"; id: string };
  * act; a new dimension is chosen at once. Given `acts`, each dimension and
  * each zone's label also holds an ⓘ opening the panel of that dimension or
  * category, and every panel holds Delete, which calls the act deleting its
- * thing once the learner agrees to a question. It must be given `board`
- * fitted to `deck`.
+ * thing once the learner agrees to a question. Given `acts`, the bar also
+ * holds "Save answers", which calls `saveAnswers` with the chosen dimension
+ * and the category of the zone each card lies in, after a question when an
+ * existing answer would change. It must be given `board` fitted to `deck`.
  */
 export default function Board({
   deck,
@@ -112,6 +117,9 @@ export default function Board({
   const [open, setOpen] = useState<Opened | null>(null);
   // Whether the question before deleting the open thing shows.
   const [asking, setAsking] = useState(false);
+  // The question before Save answers changes existing answers, while it
+  // shows.
+  const [saveQuestion, setSaveQuestion] = useState<string | null>(null);
   // The ⓘ that opened the panel, which takes the focus back when it closes.
   const opener = useRef<HTMLElement | null>(null);
   const marks: Record<string, Mark> = {};
@@ -205,6 +213,25 @@ export default function Board({
     setOpen(null);
   }
 
+  /**
+   * Sets the answers of the board as it is now by `acts` and closes the
+   * question; sets none while no dimension is chosen or no card lies in a
+   * zone.
+   */
+  function save(acts: BoardActs) {
+    setSaveQuestion(null);
+    const answers = answersOnBoard(board);
+    if (chosen !== undefined && answers.length > 0)
+      acts.saveAnswers(chosen.id, answers);
+  }
+
+  function pressSave(acts: BoardActs) {
+    if (chosen === undefined || answersOnBoard(board).length === 0) return;
+    const changed = answersChanged(board, deck);
+    if (changed === 0) save(acts);
+    else setSaveQuestion(saveAnswersQuestion(changed, chosen.name));
+  }
+
   const openCard = (card: string, from: HTMLElement) =>
     openPanel("card", card, from);
 
@@ -296,6 +323,15 @@ export default function Board({
               </p>
             )}
           </div>
+          {acts && (
+            <button
+              type="button"
+              className="board-action board-save"
+              onClick={() => pressSave(acts)}
+            >
+              Save answers
+            </button>
+          )}
           {account}
         </div>
         <Pool
@@ -384,6 +420,14 @@ export default function Board({
           confirm="Delete"
           onConfirm={() => confirmDelete(acts, panel.remove)}
           onCancel={() => setAsking(false)}
+        />
+      )}
+      {acts && saveQuestion !== null && (
+        <Question
+          question={saveQuestion}
+          confirm="Save answers"
+          onConfirm={() => save(acts)}
+          onCancel={() => setSaveQuestion(null)}
         />
       )}
     </DndContext>
