@@ -30,7 +30,7 @@ Judgement: The engineer runs `npx convex dev` and `npm run dev`, signs in in two
 
 **Status**
 
-- [ ]
+- [x]
 
 **Goal**
 
@@ -132,7 +132,11 @@ export function linesFor(
 
 **Debrief**
 
-None.
+- `npx vitest run src/decks/notKept.test.ts --reporter=verbose` printed ✓ for each of the 14 tests the Done when names, by those names, and "Tests 14 passed (14)".
+- `npm run typecheck` ran `tsc -b && tsc --noEmit -p convex` and exited with status 0.
+- `npm test` printed "Test Files 25 passed (25)" and "Tests 261 passed (261)".
+- Departures from guidance: none.
+- Read `linesFor` and `leftOutLines` in src/decks/notKept.ts for one choice the file does not settle: an id of a `LeftOut` that `sent.answers` does not hold gives no line, which the act never returns since it takes its ids from the pairs sent. The kind's word in a line comes from a record of the four words, `kindWords`, not from the `Kind` value itself, so the words shown stay apart from the code names.
 
 ### T2 — Hook that keeps what it sends and gives the lines
 
